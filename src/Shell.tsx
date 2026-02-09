@@ -1,6 +1,6 @@
 // ABOUTME: Application shell with sidebar navigation, header search, and route outlet.
 // ABOUTME: Provides the main layout: header with search, filterable sidebar, content area.
-import { Anchor, AppShell, Group, NavLink, Stack, Text, TextInput, Title } from '@mantine/core';
+import { Anchor, AppShell, Group, Kbd, NavLink, Stack, Text, TextInput, Title } from '@mantine/core';
 import { useDebouncedCallback } from '@mantine/hooks';
 import { getDisplayString } from '@medplum/core';
 import type { Bundle, Resource, ResourceType } from '@medplum/fhirtypes';
@@ -69,6 +69,7 @@ export function Shell(): JSX.Element {
           <TextInput
             placeholder="Search..."
             leftSection={<IconSearch size={16} />}
+            rightSection={<Kbd size="xs">⌘K</Kbd>}
             ml="xl"
             style={{ flex: 1, maxWidth: 400 }}
             onClick={() => spotlight.open()}
