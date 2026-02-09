@@ -1,16 +1,17 @@
 // ABOUTME: Fetches and displays a single FHIR resource.
 // ABOUTME: Uses MedplumClient for fetching and ResourceDetail for rendering.
-import { Alert, Loader, Stack } from '@mantine/core';
+import { Alert, Button, Group, Loader, Stack } from '@mantine/core';
 import type { Resource, ResourceType } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router';
+import { useNavigate, useParams } from 'react-router';
 import { ResourceDetail } from './ResourceDetail';
 
 export function ResourceDetailPage(): JSX.Element {
   const { resourceType, id } = useParams<{ resourceType: string; id: string }>();
   const medplum = useMedplum();
+  const navigate = useNavigate();
   const [resource, setResource] = useState<Resource>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error>();
@@ -30,7 +31,16 @@ export function ResourceDetailPage(): JSX.Element {
     <Stack>
       {loading && <Loader />}
       {error && <Alert color="red">{error.message}</Alert>}
-      {resource && <ResourceDetail resource={resource} />}
+      {resource && (
+        <>
+          <Group justify="flex-end">
+            <Button variant="light" onClick={() => navigate(`/${resourceType}/${id}/edit`)}>
+              Edit
+            </Button>
+          </Group>
+          <ResourceDetail resource={resource} />
+        </>
+      )}
     </Stack>
   );
 }
