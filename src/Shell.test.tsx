@@ -48,4 +48,10 @@ describe('Shell', () => {
     renderShell();
     expect(screen.getByPlaceholderText('Filter...')).toBeDefined();
   });
+
+  it('renders Cinder title as a link to home', () => {
+    renderShell('/Patient');
+    const link = screen.getByRole('link', { name: /Cinder/i });
+    expect(link.getAttribute('href')).toBe('/');
+  });
 });

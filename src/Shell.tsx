@@ -1,6 +1,6 @@
 // ABOUTME: Application shell with sidebar navigation, header search, and route outlet.
 // ABOUTME: Provides the main layout: header with search, filterable sidebar, content area.
-import { AppShell, Group, NavLink, Stack, Text, TextInput, Title } from '@mantine/core';
+import { Anchor, AppShell, Group, NavLink, Stack, Text, TextInput, Title } from '@mantine/core';
 import { useDebouncedCallback } from '@mantine/hooks';
 import { getDisplayString } from '@medplum/core';
 import type { Bundle, Resource, ResourceType } from '@medplum/fhirtypes';
@@ -64,7 +64,7 @@ export function Shell(): JSX.Element {
     >
       <AppShell.Header>
         <Group h="100%" px="md">
-          <Title order={3}>Cinder</Title>
+          <Anchor component={Link} to="/" underline="never" c="inherit"><Title order={3}>Cinder</Title></Anchor>
           <Text size="sm" c="dimmed">FHIR Browser</Text>
           <TextInput
             placeholder="Search..."
