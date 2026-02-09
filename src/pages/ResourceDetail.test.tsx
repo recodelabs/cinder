@@ -33,10 +33,10 @@ function renderWithProviders(ui: JSX.Element): ReturnType<typeof render> {
 }
 
 describe('ResourceDetail', () => {
-  it('renders resource properties', () => {
+  it('renders humanized property labels', () => {
     renderWithProviders(<ResourceDetail resource={testPatient} />);
-    expect(screen.getByText('gender')).toBeDefined();
-    expect(screen.getByText('birthDate')).toBeDefined();
+    expect(screen.getByText('Gender')).toBeDefined();
+    expect(screen.getByText('Birth Date')).toBeDefined();
   });
 
   it('renders patient gender', () => {

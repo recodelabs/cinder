@@ -10,6 +10,10 @@ interface ResourceDetailProps {
   readonly resource: Resource;
 }
 
+function humanizeKey(key: string): string {
+  return key.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (c) => c.toUpperCase());
+}
+
 export function ResourceDetail({ resource }: ResourceDetailProps): JSX.Element {
   const schema = getDataType(resource.resourceType);
   const elements = schema?.elements ?? {};
@@ -24,7 +28,7 @@ export function ResourceDetail({ resource }: ResourceDetailProps): JSX.Element {
           }
           return (
             <div key={key}>
-              <Text size="sm" fw={600} c="dimmed">{key}</Text>
+              <Text size="sm" fw={600} c="dimmed">{humanizeKey(key)}</Text>
               <ResourcePropertyDisplay
                 property={element}
                 propertyType={element.type[0]?.code ?? 'string'}

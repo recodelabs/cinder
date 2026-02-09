@@ -19,6 +19,7 @@ export function ResourceCreatePage({ resourceType }: ResourceCreatePageProps): J
 
   const handleSubmit = useCallback(
     (resource: Resource) => {
+      setError(undefined);
       medplum
         .createResource(resource)
         .then((created) => navigate(`/${created.resourceType}/${created.id}`))

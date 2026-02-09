@@ -77,7 +77,7 @@ export function Shell(): JSX.Element {
         </Group>
       </AppShell.Header>
 
-      <Spotlight.Root query={query} onQueryChange={handleQueryChange}>
+      <Spotlight.Root query={query} onQueryChange={handleQueryChange} shortcut={['mod + K']}>
         <Spotlight.Search placeholder="Search resources..." leftSection={<IconSearch size={20} />} loading={loading} />
         <Spotlight.ActionsList>
           {results.length > 0 ? (
