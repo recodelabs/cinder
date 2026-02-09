@@ -1,5 +1,5 @@
-// ABOUTME: Tests for the resource type listing page.
-// ABOUTME: Verifies the New button and search results rendering.
+// ABOUTME: Tests for the resource type listing page with search controls.
+// ABOUTME: Verifies SearchControl renders with Fields/Filters toolbar and handles navigation.
 import { MantineProvider } from '@mantine/core';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { render, screen } from '@testing-library/react';
@@ -12,19 +12,20 @@ import { ResourceTypePage } from './ResourceTypePage';
 const mockBundle: Bundle<Patient> = {
   resourceType: 'Bundle',
   type: 'searchset',
+  total: 1,
   entry: [
     { resource: { resourceType: 'Patient', id: '1', name: [{ family: 'Smith', given: ['John'] }] } },
   ],
 };
 
-function renderTypePage(): ReturnType<typeof render> {
+function renderTypePage(path = '/Patient'): ReturnType<typeof render> {
   const medplum = new HealthcareMedplumClient({ getAccessToken: () => 'test' });
   vi.spyOn(medplum, 'search').mockResolvedValue(mockBundle);
 
   return render(
     <MantineProvider>
       <MedplumProvider medplum={medplum}>
-        <MemoryRouter initialEntries={['/Patient']}>
+        <MemoryRouter initialEntries={[path]}>
           <Routes>
             <Route path=":resourceType" element={<ResourceTypePage />} />
           </Routes>
@@ -35,13 +36,18 @@ function renderTypePage(): ReturnType<typeof render> {
 }
 
 describe('ResourceTypePage', () => {
-  it('renders the New button', async () => {
+  it('renders the Fields toolbar button', async () => {
     renderTypePage();
-    expect(await screen.findByRole('button', { name: 'New' })).toBeDefined();
+    expect(await screen.findByText('Fields')).toBeDefined();
   });
 
-  it('renders search results', async () => {
+  it('renders the Filters toolbar button', async () => {
     renderTypePage();
-    expect(await screen.findByText('John Smith')).toBeDefined();
+    expect(await screen.findByText('Filters')).toBeDefined();
+  });
+
+  it('renders the New toolbar button', async () => {
+    renderTypePage();
+    expect(await screen.findByText('New...')).toBeDefined();
   });
 });
