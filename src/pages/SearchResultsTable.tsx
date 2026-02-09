@@ -4,7 +4,7 @@ import { getDisplayString } from '@medplum/core';
 import type { Bundle, Resource } from '@medplum/fhirtypes';
 import { Table, Text } from '@mantine/core';
 import type { JSX } from 'react';
-import { Link } from 'react-router';
+import { useNavigate } from 'react-router';
 
 interface SearchResultsTableProps {
   readonly bundle: Bundle;
@@ -13,6 +13,7 @@ interface SearchResultsTableProps {
 
 export function SearchResultsTable({ bundle, resourceType }: SearchResultsTableProps): JSX.Element {
   const entries = bundle.entry ?? [];
+  const navigate = useNavigate();
 
   if (entries.length === 0) {
     return <Text c="dimmed">No results found for {resourceType}.</Text>;
@@ -34,7 +35,11 @@ export function SearchResultsTable({ bundle, resourceType }: SearchResultsTableP
             return null;
           }
           return (
-            <Table.Tr key={resource.id} component={Link} to={`/${resource.resourceType}/${resource.id}`}>
+            <Table.Tr
+              key={resource.id}
+              onClick={() => navigate(`/${resource.resourceType}/${resource.id}`)}
+              style={{ cursor: 'pointer' }}
+            >
               <Table.Td>{resource.id}</Table.Td>
               <Table.Td>{getDisplayString(resource)}</Table.Td>
               <Table.Td>{resource.meta?.lastUpdated}</Table.Td>
