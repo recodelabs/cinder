@@ -1,6 +1,9 @@
 // ABOUTME: MedplumClient subclass that routes FHIR operations through the proxy.
-// ABOUTME: Overrides schema methods (pre-loaded) and injects auth headers.
-import { MedplumClient } from '@medplum/core';
+// ABOUTME: Overrides schema and ValueSet methods for local-first operation.
+import { MedplumClient, ReadablePromise } from '@medplum/core';
+import type { ValueSetExpandParams } from '@medplum/core';
+import type { ValueSet } from '@medplum/fhirtypes';
+import { expandValueSet } from './valuesets';
 
 export interface HealthcareMedplumClientConfig {
   getAccessToken: () => string | undefined;
@@ -32,5 +35,14 @@ export class HealthcareMedplumClient extends MedplumClient {
   override async requestProfileSchema(): Promise<void> {
     // Profiles are pre-loaded from @medplum/definitions at startup
     return;
+  }
+
+  override valueSetExpand(params: ValueSetExpandParams): ReadablePromise<ValueSet> {
+    const result = expandValueSet(params.url ?? '', params.filter);
+    if (result) {
+      return new ReadablePromise(Promise.resolve(result));
+    }
+    // Fall back to server-side expansion via proxy
+    return super.valueSetExpand(params);
   }
 }

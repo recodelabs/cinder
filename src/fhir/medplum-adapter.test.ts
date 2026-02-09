@@ -33,4 +33,27 @@ describe('HealthcareMedplumClient', () => {
     await client.requestProfileSchema('http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient');
     expect(mockFetch).not.toHaveBeenCalled();
   });
+
+  it('valueSetExpand resolves locally for known ValueSets', async () => {
+    const client = new HealthcareMedplumClient({ getAccessToken: () => 'tok' });
+    const result = await client.valueSetExpand({ url: 'http://hl7.org/fhir/ValueSet/administrative-gender' });
+    expect(result.resourceType).toBe('ValueSet');
+    const codes = result.expansion?.contains?.map((c) => c.code);
+    expect(codes).toContain('male');
+    expect(codes).toContain('female');
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it('valueSetExpand falls back to server for unknown ValueSets', async () => {
+    const client = new HealthcareMedplumClient({ getAccessToken: () => 'tok' });
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ resourceType: 'ValueSet', expansion: { contains: [] } }),
+      status: 200,
+      headers: new Headers({ 'content-type': 'application/fhir+json' }),
+    });
+    const result = await client.valueSetExpand({ url: 'http://example.com/unknown-valueset' });
+    expect(mockFetch).toHaveBeenCalled();
+    expect(result.resourceType).toBe('ValueSet');
+  });
 });
