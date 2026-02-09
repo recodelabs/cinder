@@ -4,6 +4,12 @@ import { loadSchemas } from './schemas';
 
 loadSchemas();
 
+global.ResizeObserver = class {
+  observe(): void {}
+  unobserve(): void {}
+  disconnect(): void {}
+};
+
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: (query: string) => ({

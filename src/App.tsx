@@ -7,6 +7,7 @@ import { Shell } from './Shell';
 import { HomePage } from './pages/HomePage';
 import { ResourceTypePage } from './pages/ResourceTypePage';
 import { ResourceDetailPage } from './pages/ResourceDetailPage';
+import { ResourceCreateRoutePage } from './pages/ResourceCreateRoutePage';
 import { ResourceEditRoutePage } from './pages/ResourceEditRoutePage';
 
 export function App(): JSX.Element {
@@ -16,6 +17,7 @@ export function App(): JSX.Element {
         <Route element={<Shell />}>
           <Route index element={<HomePage />} />
           <Route path=":resourceType" element={<ResourceTypePage />} />
+          <Route path=":resourceType/new" element={<ResourceCreateRoutePage />} />
           <Route path=":resourceType/:id" element={<ResourceDetailPage />} />
           <Route path=":resourceType/:id/edit" element={<ResourceEditRoutePage />} />
         </Route>

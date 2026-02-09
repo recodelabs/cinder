@@ -4,7 +4,7 @@ import { Alert, Button, Group, Loader, Stack } from '@mantine/core';
 import type { Resource, ResourceType } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { ResourceDetail } from './ResourceDetail';
 
@@ -27,6 +27,15 @@ export function ResourceDetailPage(): JSX.Element {
       .finally(() => setLoading(false));
   }, [medplum, resourceType, id]);
 
+  const handleDelete = useCallback(() => {
+    if (!resourceType || !id) return;
+    if (!window.confirm(`Delete this ${resourceType}?`)) return;
+    medplum
+      .deleteResource(resourceType as ResourceType, id)
+      .then(() => navigate(`/${resourceType}`))
+      .catch(setError);
+  }, [medplum, navigate, resourceType, id]);
+
   return (
     <Stack>
       {loading && <Loader />}
@@ -36,6 +45,9 @@ export function ResourceDetailPage(): JSX.Element {
           <Group justify="flex-end">
             <Button variant="light" onClick={() => navigate(`/${resourceType}/${id}/edit`)}>
               Edit
+            </Button>
+            <Button variant="light" color="red" onClick={handleDelete}>
+              Delete
             </Button>
           </Group>
           <ResourceDetail resource={resource} />
