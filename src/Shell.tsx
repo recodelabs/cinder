@@ -1,6 +1,6 @@
 // ABOUTME: Application shell with sidebar navigation, header search, and route outlet.
 // ABOUTME: Provides the main layout: header with search, filterable sidebar, content area.
-import { AppShell, Group, NavLink, Text, TextInput, Title } from '@mantine/core';
+import { AppShell, Group, NavLink, Stack, Text, TextInput, Title } from '@mantine/core';
 import { useDebouncedCallback } from '@mantine/hooks';
 import { getDisplayString } from '@medplum/core';
 import type { Bundle, Resource, ResourceType } from '@medplum/fhirtypes';
@@ -10,15 +10,7 @@ import { IconFilter, IconSearch } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router';
-
-const RESOURCE_TYPES = [
-  'Patient', 'Practitioner', 'Organization', 'Encounter',
-  'Observation', 'Condition', 'Procedure', 'MedicationRequest',
-  'AllergyIntolerance', 'Immunization', 'DiagnosticReport',
-  'CarePlan', 'CareTeam', 'Claim', 'Coverage',
-  'DocumentReference', 'Goal', 'Location', 'Medication',
-  'ServiceRequest', 'Specimen',
-];
+import { RESOURCE_TYPES } from './constants';
 
 export function Shell(): JSX.Element {
   const medplum = useMedplum();
@@ -88,10 +80,13 @@ export function Shell(): JSX.Element {
             results.map((r) => (
               <Spotlight.Action
                 key={r.id}
-                label={getDisplayString(r)}
-                description={`${r.resourceType}/${r.id}`}
                 onClick={() => navigate(`/${r.resourceType}/${r.id}`)}
-              />
+              >
+                <Stack gap={0}>
+                  <Text size="sm" fw={500}>{getDisplayString(r)}</Text>
+                  <Text size="xs" c="dimmed">{r.resourceType}/{r.id}</Text>
+                </Stack>
+              </Spotlight.Action>
             ))
           ) : query.trim() ? (
             <Spotlight.Empty>No results found</Spotlight.Empty>

@@ -3,13 +3,7 @@
 import { SimpleGrid, Card, Text, Title } from '@mantine/core';
 import type { JSX } from 'react';
 import { Link } from 'react-router';
-
-const RESOURCE_TYPES = [
-  'Patient', 'Practitioner', 'Organization', 'Encounter',
-  'Observation', 'Condition', 'Procedure', 'MedicationRequest',
-  'AllergyIntolerance', 'Immunization', 'DiagnosticReport',
-  'CarePlan', 'CareTeam', 'DocumentReference',
-];
+import { RESOURCE_TYPES } from '../constants';
 
 export function HomePage(): JSX.Element {
   return (
