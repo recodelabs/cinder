@@ -1,10 +1,11 @@
 // ABOUTME: Default search configurations per FHIR resource type.
 // ABOUTME: Maps resource types to their most useful columns, sort order, and page size.
 import type { SearchRequest } from '@medplum/core';
+import type { ResourceType } from '@medplum/fhirtypes';
 
 export function getDefaultSearch(resourceType: string): SearchRequest {
   return {
-    resourceType,
+    resourceType: resourceType as ResourceType,
     fields: getDefaultFields(resourceType),
     sortRules: [{ code: '_lastUpdated', descending: true }],
     count: 20,

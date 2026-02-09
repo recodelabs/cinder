@@ -17,7 +17,7 @@ const testPatient: Patient = {
 
 function renderDetailPage(path = '/Patient/test-1'): ReturnType<typeof render> {
   const medplum = new HealthcareMedplumClient({ getAccessToken: () => 'test' });
-  vi.spyOn(medplum, 'readResource').mockResolvedValue(testPatient);
+  vi.spyOn(medplum, 'readResource').mockResolvedValue(testPatient as any);
 
   return render(
     <MantineProvider>

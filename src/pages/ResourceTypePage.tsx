@@ -2,6 +2,7 @@
 // ABOUTME: Uses Medplum's SearchControl for table rendering and search state management.
 import { formatSearchQuery, parseSearchRequest } from '@medplum/core';
 import type { SearchRequest } from '@medplum/core';
+import type { ResourceType } from '@medplum/fhirtypes';
 import { SearchControl } from '@medplum/react';
 import type { JSX } from 'react';
 import { useMemo } from 'react';
@@ -19,7 +20,7 @@ export function ResourceTypePage(): JSX.Element {
     return {
       ...defaults,
       ...parsed,
-      resourceType: resourceType ?? '',
+      resourceType: (resourceType ?? '') as ResourceType,
     };
   }, [resourceType, location.search]);
 
