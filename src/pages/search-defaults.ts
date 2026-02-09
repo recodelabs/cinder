@@ -15,11 +15,11 @@ export function getDefaultSearch(resourceType: string): SearchRequest {
 function getDefaultFields(resourceType: string): string[] {
   switch (resourceType) {
     case 'Patient':
-      return ['name', 'birthdate', 'gender'];
+      return ['_id', 'name', 'birthdate', 'gender', '_lastUpdated'];
     case 'Practitioner':
-      return ['name', 'birthdate', 'gender'];
+      return ['_id', 'name', 'birthdate', 'gender', '_lastUpdated'];
     case 'Organization':
-      return ['name'];
+      return ['_id', 'name', '_lastUpdated'];
     case 'Encounter':
       return ['subject', 'period', 'type'];
     case 'Observation':

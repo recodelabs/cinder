@@ -1,18 +1,23 @@
 // ABOUTME: Tests for the application shell layout.
-// ABOUTME: Verifies navigation, resource type list, and route rendering.
+// ABOUTME: Verifies navigation, resource type list, search input, and route rendering.
 import { MantineProvider } from '@mantine/core';
+import { MedplumProvider } from '@medplum/react-hooks';
 import { render, screen } from '@testing-library/react';
-import type { JSX } from 'react';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, it } from 'vitest';
+import { HealthcareMedplumClient } from './fhir/medplum-adapter';
 import { Shell } from './Shell';
+
+const medplum = new HealthcareMedplumClient({ getAccessToken: () => 'test' });
 
 function renderShell(route = '/'): ReturnType<typeof render> {
   return render(
     <MantineProvider>
-      <MemoryRouter initialEntries={[route]}>
-        <Shell />
-      </MemoryRouter>
+      <MedplumProvider medplum={medplum}>
+        <MemoryRouter initialEntries={[route]}>
+          <Shell />
+        </MemoryRouter>
+      </MedplumProvider>
     </MantineProvider>
   );
 }
@@ -27,5 +32,10 @@ describe('Shell', () => {
     renderShell('/');
     expect(screen.getByText('Patient')).toBeDefined();
     expect(screen.getByText('Observation')).toBeDefined();
+  });
+
+  it('renders a search input in the header', () => {
+    renderShell();
+    expect(screen.getByPlaceholderText('Search...')).toBeDefined();
   });
 });

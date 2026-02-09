@@ -8,6 +8,7 @@ import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { ResourceDetail } from './ResourceDetail';
+import { ResourceHeader } from './ResourceHeader';
 import { ResourceJsonTab } from './ResourceJsonTab';
 
 export function ResourceDetailPage(): JSX.Element {
@@ -59,6 +60,7 @@ export function ResourceDetailPage(): JSX.Element {
       {error && <Alert color="red">{error.message}</Alert>}
       {resource && (
         <>
+          <ResourceHeader resource={resource} />
           <Group justify="flex-end">
             <Button variant="light" color="red" onClick={handleDelete}>
               Delete
