@@ -39,6 +39,11 @@ describe('Shell', () => {
     expect(screen.getByPlaceholderText('Search...')).toBeDefined();
   });
 
+  it('does not contain patient-only search placeholder', () => {
+    const { container } = renderShell();
+    expect(container.innerHTML).not.toContain('Search patients...');
+  });
+
   it('renders a sidebar filter input', () => {
     renderShell();
     expect(screen.getByPlaceholderText('Filter...')).toBeDefined();

@@ -38,8 +38,12 @@ export function Shell(): JSX.Element {
     }
     setLoading(true);
     try {
-      const bundle: Bundle = await medplum.search('Patient' as ResourceType, { name: q, _count: '10' });
-      setResults((bundle.entry ?? []).map((e) => e.resource).filter(Boolean) as Resource[]);
+      const searches = (['Patient', 'Practitioner', 'Organization'] as ResourceType[]).map((type) =>
+        medplum.search(type, { name: q, _count: '5' }).catch(() => ({ entry: [] }) as Bundle)
+      );
+      const bundles = await Promise.all(searches);
+      const resources = bundles.flatMap((b) => (b.entry ?? []).map((e) => e.resource).filter(Boolean)) as Resource[];
+      setResults(resources);
     } catch {
       setResults([]);
     } finally {
@@ -74,7 +78,7 @@ export function Shell(): JSX.Element {
       </AppShell.Header>
 
       <Spotlight.Root query={query} onQueryChange={handleQueryChange}>
-        <Spotlight.Search placeholder="Search patients..." leftSection={<IconSearch size={20} />} loading={loading} />
+        <Spotlight.Search placeholder="Search resources..." leftSection={<IconSearch size={20} />} loading={loading} />
         <Spotlight.ActionsList>
           {results.length > 0 ? (
             results.map((r) => (
