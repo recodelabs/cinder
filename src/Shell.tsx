@@ -1,6 +1,6 @@
 // ABOUTME: Application shell with sidebar navigation, header search, and route outlet.
 // ABOUTME: Provides the main layout: header with search, filterable sidebar, content area.
-import { Anchor, AppShell, Group, Kbd, NavLink, Stack, Text, TextInput, Title } from '@mantine/core';
+import { Anchor, AppShell, Button, Group, Kbd, NavLink, Stack, Text, TextInput, Title } from '@mantine/core';
 import { useDebouncedCallback } from '@mantine/hooks';
 import { getDisplayString } from '@medplum/core';
 import type { Bundle, Resource, ResourceType } from '@medplum/fhirtypes';
@@ -10,9 +10,15 @@ import { IconFilter, IconSearch } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router';
+import { useAuth } from './auth/AuthProvider';
 import { RESOURCE_TYPES } from './constants';
 
-export function Shell(): JSX.Element {
+interface ShellProps {
+  readonly onChangeStore?: () => void;
+}
+
+export function Shell({ onChangeStore }: ShellProps = {}): JSX.Element {
+  const { signOut } = useAuth();
   const medplum = useMedplum();
   const navigate = useNavigate();
   const location = useLocation();
@@ -75,6 +81,12 @@ export function Shell(): JSX.Element {
             onClick={() => spotlight.open()}
             readOnly
           />
+          {onChangeStore && (
+            <Group gap="xs" ml="auto">
+              <Button variant="subtle" size="compact-sm" onClick={onChangeStore}>Change Store</Button>
+              <Button variant="subtle" size="compact-sm" onClick={signOut}>Sign Out</Button>
+            </Group>
+          )}
         </Group>
       </AppShell.Header>
 

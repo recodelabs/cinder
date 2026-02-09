@@ -7,6 +7,7 @@ import { expandValueSet } from './valuesets';
 
 export interface HealthcareMedplumClientConfig {
   getAccessToken: () => string | undefined;
+  baseUrl?: string;
 }
 
 export class HealthcareMedplumClient extends MedplumClient {
@@ -14,7 +15,7 @@ export class HealthcareMedplumClient extends MedplumClient {
     const getAccessToken = config.getAccessToken;
 
     super({
-      baseUrl: globalThis.location?.origin ?? 'http://localhost:5173',
+      baseUrl: config.baseUrl ?? globalThis.location?.origin ?? 'http://localhost:5173',
       fhirUrlPath: 'fhir',
       fetch: (url: string | URL, init?: RequestInit) => {
         const token = getAccessToken();

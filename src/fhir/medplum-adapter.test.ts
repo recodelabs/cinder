@@ -44,6 +44,17 @@ describe('HealthcareMedplumClient', () => {
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
+  it('uses custom baseUrl when provided', () => {
+    const client = new HealthcareMedplumClient({
+      getAccessToken: () => 'tok',
+      baseUrl: 'https://healthcare.googleapis.com/v1/projects/p/locations/l/datasets/d/fhirStores/s',
+    });
+    const url = client.fhirUrl('Patient', '123');
+    expect(url.toString()).toBe(
+      'https://healthcare.googleapis.com/v1/projects/p/locations/l/datasets/d/fhirStores/s/fhir/Patient/123'
+    );
+  });
+
   it('valueSetExpand falls back to server for unknown ValueSets', async () => {
     const client = new HealthcareMedplumClient({ getAccessToken: () => 'tok' });
     mockFetch.mockResolvedValue({

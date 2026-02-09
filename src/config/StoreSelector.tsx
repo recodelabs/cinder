@@ -20,7 +20,7 @@ export function StoreSelector({ onSubmit }: StoreSelectorProps): JSX.Element {
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
-      onSubmit({ project, location, dataset, fhirStore });
+      onSubmit({ type: 'gcp', project, location, dataset, fhirStore });
     },
     [project, location, dataset, fhirStore, onSubmit]
   );

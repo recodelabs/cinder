@@ -1,21 +1,33 @@
 // ABOUTME: Tests for the application shell layout.
-// ABOUTME: Verifies navigation, resource type list, search input, and route rendering.
+// ABOUTME: Verifies navigation, resource type list, search input, header controls, and route rendering.
 import { MantineProvider } from '@mantine/core';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { HealthcareMedplumClient } from './fhir/medplum-adapter';
 import { Shell } from './Shell';
 
 const medplum = new HealthcareMedplumClient({ getAccessToken: () => 'test' });
 
-function renderShell(route = '/'): ReturnType<typeof render> {
+const mockSignOut = vi.fn();
+vi.mock('./auth/AuthProvider', () => ({
+  useAuth: () => ({ isAuthenticated: true, signOut: mockSignOut }),
+}));
+
+interface RenderShellOptions {
+  route?: string;
+  onChangeStore?: () => void;
+}
+
+function renderShell(options: RenderShellOptions = {}): ReturnType<typeof render> {
+  const { route = '/', onChangeStore } = options;
   return render(
     <MantineProvider>
       <MedplumProvider medplum={medplum}>
         <MemoryRouter initialEntries={[route]}>
-          <Shell />
+          <Shell onChangeStore={onChangeStore} />
         </MemoryRouter>
       </MedplumProvider>
     </MantineProvider>
@@ -29,7 +41,7 @@ describe('Shell', () => {
   });
 
   it('shows resource type list on home page', () => {
-    renderShell('/');
+    renderShell({ route: '/' });
     expect(screen.getByText('Patient')).toBeDefined();
     expect(screen.getByText('Observation')).toBeDefined();
   });
@@ -50,8 +62,39 @@ describe('Shell', () => {
   });
 
   it('renders Cinder title as a link to home', () => {
-    renderShell('/Patient');
+    renderShell({ route: '/Patient' });
     const link = screen.getByRole('link', { name: /Cinder/i });
     expect(link.getAttribute('href')).toBe('/');
+  });
+
+  it('renders sign-out button when onChangeStore is provided', () => {
+    renderShell({ onChangeStore: vi.fn() });
+    expect(screen.getByRole('button', { name: /sign out/i })).toBeDefined();
+  });
+
+  it('calls signOut when sign-out button is clicked', async () => {
+    const user = userEvent.setup();
+    renderShell({ onChangeStore: vi.fn() });
+    await user.click(screen.getByRole('button', { name: /sign out/i }));
+    expect(mockSignOut).toHaveBeenCalled();
+  });
+
+  it('renders change-store button when onChangeStore is provided', () => {
+    renderShell({ onChangeStore: vi.fn() });
+    expect(screen.getByRole('button', { name: /change store/i })).toBeDefined();
+  });
+
+  it('calls onChangeStore when change-store button is clicked', async () => {
+    const user = userEvent.setup();
+    const onChangeStore = vi.fn();
+    renderShell({ onChangeStore });
+    await user.click(screen.getByRole('button', { name: /change store/i }));
+    expect(onChangeStore).toHaveBeenCalled();
+  });
+
+  it('hides auth buttons when onChangeStore is not provided', () => {
+    renderShell();
+    expect(screen.queryByRole('button', { name: /sign out/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /change store/i })).toBeNull();
   });
 });
