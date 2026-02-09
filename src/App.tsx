@@ -8,7 +8,6 @@ import { HomePage } from './pages/HomePage';
 import { ResourceTypePage } from './pages/ResourceTypePage';
 import { ResourceDetailPage } from './pages/ResourceDetailPage';
 import { ResourceCreateRoutePage } from './pages/ResourceCreateRoutePage';
-import { ResourceEditRoutePage } from './pages/ResourceEditRoutePage';
 
 export function App(): JSX.Element {
   return (
@@ -19,7 +18,7 @@ export function App(): JSX.Element {
           <Route path=":resourceType" element={<ResourceTypePage />} />
           <Route path=":resourceType/new" element={<ResourceCreateRoutePage />} />
           <Route path=":resourceType/:id" element={<ResourceDetailPage />} />
-          <Route path=":resourceType/:id/edit" element={<ResourceEditRoutePage />} />
+          <Route path=":resourceType/:id/:tab" element={<ResourceDetailPage />} />
         </Route>
       </Routes>
     </AppProviders>

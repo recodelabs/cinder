@@ -1,15 +1,17 @@
-// ABOUTME: Fetches and displays a single FHIR resource.
-// ABOUTME: Uses MedplumClient for fetching and ResourceDetail for rendering.
-import { Alert, Button, Group, Loader, Stack } from '@mantine/core';
+// ABOUTME: Fetches and displays a single FHIR resource with tabbed navigation.
+// ABOUTME: Tabs: Details (read-only view), Edit (form), JSON (raw editor).
+import { Alert, Button, Group, Loader, Stack, Tabs } from '@mantine/core';
 import type { Resource, ResourceType } from '@medplum/fhirtypes';
+import { ResourceForm } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { ResourceDetail } from './ResourceDetail';
+import { ResourceJsonTab } from './ResourceJsonTab';
 
 export function ResourceDetailPage(): JSX.Element {
-  const { resourceType, id } = useParams<{ resourceType: string; id: string }>();
+  const { resourceType, id, tab } = useParams<{ resourceType: string; id: string; tab: string }>();
   const medplum = useMedplum();
   const navigate = useNavigate();
   const [resource, setResource] = useState<Resource>();
@@ -36,6 +38,21 @@ export function ResourceDetailPage(): JSX.Element {
       .catch(setError);
   }, [medplum, navigate, resourceType, id]);
 
+  const handleSubmit = useCallback(
+    (updated: Resource) => {
+      medplum
+        .updateResource(updated)
+        .then((saved) => {
+          setResource(saved);
+          navigate(`/${resourceType}/${id}`);
+        })
+        .catch(setError);
+    },
+    [medplum, navigate, resourceType, id]
+  );
+
+  const activeTab = tab ?? 'details';
+
   return (
     <Stack>
       {loading && <Loader />}
@@ -43,14 +60,35 @@ export function ResourceDetailPage(): JSX.Element {
       {resource && (
         <>
           <Group justify="flex-end">
-            <Button variant="light" onClick={() => navigate(`/${resourceType}/${id}/edit`)}>
-              Edit
-            </Button>
             <Button variant="light" color="red" onClick={handleDelete}>
               Delete
             </Button>
           </Group>
-          <ResourceDetail resource={resource} />
+          <Tabs
+            value={activeTab}
+            onChange={(value) => {
+              const path =
+                value === 'details'
+                  ? `/${resourceType}/${id}`
+                  : `/${resourceType}/${id}/${value}`;
+              navigate(path);
+            }}
+          >
+            <Tabs.List>
+              <Tabs.Tab value="details">Details</Tabs.Tab>
+              <Tabs.Tab value="edit">Edit</Tabs.Tab>
+              <Tabs.Tab value="json">JSON</Tabs.Tab>
+            </Tabs.List>
+            <Tabs.Panel value="details" pt="md">
+              <ResourceDetail resource={resource} />
+            </Tabs.Panel>
+            <Tabs.Panel value="edit" pt="md">
+              <ResourceForm defaultValue={resource} onSubmit={handleSubmit} />
+            </Tabs.Panel>
+            <Tabs.Panel value="json" pt="md">
+              <ResourceJsonTab resource={resource} onSubmit={handleSubmit} />
+            </Tabs.Panel>
+          </Tabs>
         </>
       )}
     </Stack>

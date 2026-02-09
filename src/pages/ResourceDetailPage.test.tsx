@@ -1,5 +1,5 @@
-// ABOUTME: Tests for the resource detail page.
-// ABOUTME: Verifies Edit and Delete buttons render on the detail view.
+// ABOUTME: Tests for the tabbed resource detail page.
+// ABOUTME: Verifies Details/Edit/JSON tabs and Delete button rendering.
 import { MantineProvider } from '@mantine/core';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { render, screen, waitFor } from '@testing-library/react';
@@ -15,16 +15,17 @@ const testPatient: Patient = {
   name: [{ family: 'Smith', given: ['John'] }],
 };
 
-function renderDetailPage(): ReturnType<typeof render> {
+function renderDetailPage(path = '/Patient/test-1'): ReturnType<typeof render> {
   const medplum = new HealthcareMedplumClient({ getAccessToken: () => 'test' });
   vi.spyOn(medplum, 'readResource').mockResolvedValue(testPatient);
 
   return render(
     <MantineProvider>
       <MedplumProvider medplum={medplum}>
-        <MemoryRouter initialEntries={['/Patient/test-1']}>
+        <MemoryRouter initialEntries={[path]}>
           <Routes>
             <Route path=":resourceType/:id" element={<ResourceDetailPage />} />
+            <Route path=":resourceType/:id/:tab" element={<ResourceDetailPage />} />
           </Routes>
         </MemoryRouter>
       </MedplumProvider>
@@ -33,16 +34,28 @@ function renderDetailPage(): ReturnType<typeof render> {
 }
 
 describe('ResourceDetailPage', () => {
-  it('renders Edit and Delete buttons after loading', async () => {
+  it('renders Delete button after loading', async () => {
     renderDetailPage();
-    expect(await screen.findByRole('button', { name: 'Edit' })).toBeDefined();
-    expect(screen.getByRole('button', { name: 'Delete' })).toBeDefined();
+    expect(await screen.findByRole('button', { name: 'Delete' })).toBeDefined();
   });
 
-  it('renders resource details', async () => {
+  it('renders Details, Edit, and JSON tabs', async () => {
+    renderDetailPage();
+    expect(await screen.findByRole('tab', { name: 'Details' })).toBeDefined();
+    expect(screen.getByRole('tab', { name: 'Edit' })).toBeDefined();
+    expect(screen.getByRole('tab', { name: 'JSON' })).toBeDefined();
+  });
+
+  it('shows resource details by default', async () => {
     renderDetailPage();
     await waitFor(() => {
       expect(screen.getByText('Patient/test-1')).toBeDefined();
     });
+  });
+
+  it('shows JSON tab when navigated to /json', async () => {
+    renderDetailPage('/Patient/test-1/json');
+    expect(await screen.findByTestId('resource-json')).toBeDefined();
+    expect(screen.getByRole('button', { name: 'OK' })).toBeDefined();
   });
 });
