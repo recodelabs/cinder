@@ -1,8 +1,42 @@
 // ABOUTME: Vite configuration for the Cinder FHIR browser app.
-// ABOUTME: Configures React plugin, test setup, CORS proxy, and Mantine PostCSS.
+// ABOUTME: Configures React plugin, test setup, CORS proxy with GCP auth, and Mantine PostCSS.
+import { existsSync } from 'fs';
+import { GoogleAuth } from 'google-auth-library';
 import { resolve } from 'path';
+import type { Plugin } from 'vite';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
+
+function gcpAuthPlugin(saPath: string): Plugin {
+  let auth: GoogleAuth | undefined;
+  if (existsSync(saPath)) {
+    auth = new GoogleAuth({
+      keyFile: saPath,
+      scopes: ['https://www.googleapis.com/auth/cloud-platform'],
+    });
+  }
+
+  return {
+    name: 'gcp-auth',
+    configureServer(server) {
+      if (!auth) return;
+      server.middlewares.use(async (req, _res, next) => {
+        if (req.url?.startsWith('/fhir')) {
+          try {
+            const client = await auth.getClient();
+            const token = await client.getAccessToken();
+            if (token.token) {
+              req.headers['authorization'] = `Bearer ${token.token}`;
+            }
+          } catch (e) {
+            console.error('Failed to get GCP access token:', e);
+          }
+        }
+        next();
+      });
+    },
+  };
+}
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
@@ -14,7 +48,10 @@ export default defineConfig(({ mode }) => {
   const targetBase = `https://healthcare.googleapis.com/v1/projects/${project}/locations/${location}/datasets/${dataset}/fhirStores/${fhirStore}/fhir`;
 
   return {
-    plugins: [react()],
+    plugins: [
+      react(),
+      gcpAuthPlugin(resolve(__dirname, 'service-account.json')),
+    ],
     resolve: {
       alias: {
         'fhir-definitions': resolve(__dirname, 'node_modules/@medplum/definitions/dist/fhir'),
