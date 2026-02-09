@@ -2,6 +2,7 @@
 // ABOUTME: Wires auth, MedplumClient subclass, and Medplum context together.
 import { MantineProvider } from '@mantine/core';
 import '@mantine/core/styles.css';
+import '@mantine/spotlight/styles.css';
 import { MedplumProvider } from '@medplum/react-hooks';
 import type { JSX, ReactNode } from 'react';
 import { useMemo } from 'react';
