@@ -17,6 +17,7 @@ export function ResourceDetailPage(): JSX.Element {
   const navigate = useNavigate();
   const [resource, setResource] = useState<Resource>();
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<Error>();
 
   useEffect(() => {
@@ -33,21 +34,27 @@ export function ResourceDetailPage(): JSX.Element {
   const handleDelete = useCallback(() => {
     if (!resourceType || !id) return;
     if (!window.confirm(`Delete this ${resourceType}?`)) return;
+    setSaving(true);
+    setError(undefined);
     medplum
       .deleteResource(resourceType as ResourceType, id)
       .then(() => navigate(`/${resourceType}`))
-      .catch(setError);
+      .catch(setError)
+      .finally(() => setSaving(false));
   }, [medplum, navigate, resourceType, id]);
 
   const handleSubmit = useCallback(
     (updated: Resource) => {
+      setSaving(true);
+      setError(undefined);
       medplum
         .updateResource(updated)
         .then((saved) => {
           setResource(saved);
           navigate(`/${resourceType}/${id}`);
         })
-        .catch(setError);
+        .catch(setError)
+        .finally(() => setSaving(false));
     },
     [medplum, navigate, resourceType, id]
   );
@@ -77,7 +84,7 @@ export function ResourceDetailPage(): JSX.Element {
                 <Tabs.Tab value="edit">Edit</Tabs.Tab>
                 <Tabs.Tab value="json">JSON</Tabs.Tab>
               </Tabs.List>
-              <Button variant="subtle" color="red" size="xs" onClick={handleDelete}>
+              <Button variant="subtle" color="red" size="xs" onClick={handleDelete} disabled={saving} loading={saving}>
                 Delete
               </Button>
             </Group>
