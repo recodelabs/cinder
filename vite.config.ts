@@ -1,5 +1,6 @@
 // ABOUTME: Vite configuration for the Cinder FHIR browser app.
 // ABOUTME: Configures React plugin, test setup, CORS proxy, and Mantine PostCSS.
+import { resolve } from 'path';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
@@ -14,6 +15,11 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    resolve: {
+      alias: {
+        'fhir-definitions': resolve(__dirname, 'node_modules/@medplum/definitions/dist/fhir'),
+      },
+    },
     server: {
       proxy: {
         '/fhir': {
