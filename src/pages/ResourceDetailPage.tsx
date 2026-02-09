@@ -61,11 +61,6 @@ export function ResourceDetailPage(): JSX.Element {
       {resource && (
         <>
           <ResourceHeader resource={resource} />
-          <Group justify="flex-end">
-            <Button variant="light" color="red" onClick={handleDelete}>
-              Delete
-            </Button>
-          </Group>
           <Tabs
             value={activeTab}
             onChange={(value) => {
@@ -76,11 +71,16 @@ export function ResourceDetailPage(): JSX.Element {
               navigate(path);
             }}
           >
-            <Tabs.List>
-              <Tabs.Tab value="details">Details</Tabs.Tab>
-              <Tabs.Tab value="edit">Edit</Tabs.Tab>
-              <Tabs.Tab value="json">JSON</Tabs.Tab>
-            </Tabs.List>
+            <Group justify="space-between" wrap="nowrap">
+              <Tabs.List>
+                <Tabs.Tab value="details">Details</Tabs.Tab>
+                <Tabs.Tab value="edit">Edit</Tabs.Tab>
+                <Tabs.Tab value="json">JSON</Tabs.Tab>
+              </Tabs.List>
+              <Button variant="subtle" color="red" size="xs" onClick={handleDelete}>
+                Delete
+              </Button>
+            </Group>
             <Tabs.Panel value="details" pt="md">
               <ResourceDetail resource={resource} />
             </Tabs.Panel>

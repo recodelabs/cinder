@@ -3,7 +3,7 @@
 import { getDataType } from '@medplum/core';
 import type { Resource } from '@medplum/fhirtypes';
 import { ResourcePropertyDisplay } from '@medplum/react';
-import { Divider, Paper, Stack, Text, Title } from '@mantine/core';
+import { Paper, Stack, Text } from '@mantine/core';
 import type { JSX } from 'react';
 
 interface ResourceDetailProps {
@@ -16,10 +16,6 @@ export function ResourceDetail({ resource }: ResourceDetailProps): JSX.Element {
 
   return (
     <Paper p="md" withBorder>
-      <Title order={3} mb="sm">
-        {resource.resourceType}/{resource.id}
-      </Title>
-      <Divider mb="md" />
       <Stack gap="sm">
         {Object.entries(elements).map(([key, element]) => {
           const value = (resource as Record<string, unknown>)[key];

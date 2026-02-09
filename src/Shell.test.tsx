@@ -38,4 +38,9 @@ describe('Shell', () => {
     renderShell();
     expect(screen.getByPlaceholderText('Search...')).toBeDefined();
   });
+
+  it('renders a sidebar filter input', () => {
+    renderShell();
+    expect(screen.getByPlaceholderText('Filter...')).toBeDefined();
+  });
 });

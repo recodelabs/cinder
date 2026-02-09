@@ -1,15 +1,15 @@
 // ABOUTME: Application shell with sidebar navigation, header search, and route outlet.
-// ABOUTME: Provides the main layout: header with search, resource type sidebar, content area.
+// ABOUTME: Provides the main layout: header with search, filterable sidebar, content area.
 import { AppShell, Group, NavLink, Text, TextInput, Title } from '@mantine/core';
 import { useDebouncedCallback } from '@mantine/hooks';
 import { getDisplayString } from '@medplum/core';
 import type { Bundle, Resource, ResourceType } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { Spotlight, spotlight } from '@mantine/spotlight';
-import { IconSearch } from '@tabler/icons-react';
+import { IconFilter, IconSearch } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useState } from 'react';
-import { Link, Outlet, useNavigate } from 'react-router';
+import { useMemo, useState } from 'react';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router';
 
 const RESOURCE_TYPES = [
   'Patient', 'Practitioner', 'Organization', 'Encounter',
@@ -23,9 +23,21 @@ const RESOURCE_TYPES = [
 export function Shell(): JSX.Element {
   const medplum = useMedplum();
   const navigate = useNavigate();
+  const location = useLocation();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Resource[]>([]);
   const [loading, setLoading] = useState(false);
+  const [sidebarFilter, setSidebarFilter] = useState('');
+
+  const activeResourceType = location.pathname.split('/')[1] || '';
+
+  const filteredTypes = useMemo(
+    () =>
+      sidebarFilter
+        ? RESOURCE_TYPES.filter((t) => t.toLowerCase().includes(sidebarFilter.toLowerCase()))
+        : RESOURCE_TYPES,
+    [sidebarFilter]
+  );
 
   const handleSearch = useDebouncedCallback(async (q: string) => {
     if (!q.trim()) {
@@ -90,8 +102,22 @@ export function Shell(): JSX.Element {
       </Spotlight.Root>
 
       <AppShell.Navbar p="xs">
-        {RESOURCE_TYPES.map((type) => (
-          <NavLink key={type} component={Link} to={`/${type}`} label={type} />
+        <TextInput
+          placeholder="Filter..."
+          leftSection={<IconFilter size={14} />}
+          size="xs"
+          mb="xs"
+          value={sidebarFilter}
+          onChange={(e) => setSidebarFilter(e.currentTarget.value)}
+        />
+        {filteredTypes.map((type) => (
+          <NavLink
+            key={type}
+            component={Link}
+            to={`/${type}`}
+            label={type}
+            active={activeResourceType === type}
+          />
         ))}
       </AppShell.Navbar>
 

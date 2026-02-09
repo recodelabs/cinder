@@ -46,10 +46,10 @@ describe('ResourceDetailPage', () => {
     expect(screen.getByRole('tab', { name: 'JSON' })).toBeDefined();
   });
 
-  it('shows resource details by default', async () => {
+  it('shows resource header by default', async () => {
     renderDetailPage();
     await waitFor(() => {
-      expect(screen.getByText('Patient/test-1')).toBeDefined();
+      expect(screen.getByText('John Smith')).toBeDefined();
     });
   });
 
