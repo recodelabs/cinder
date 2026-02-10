@@ -12,15 +12,15 @@ interface StoreSelectorProps {
 
 export function StoreSelector({ onSubmit }: StoreSelectorProps): JSX.Element {
   const saved = loadStoreConfig();
-  const [project, setProject] = useState(saved?.project ?? '');
-  const [location, setLocation] = useState(saved?.location ?? '');
-  const [dataset, setDataset] = useState(saved?.dataset ?? '');
-  const [fhirStore, setFhirStore] = useState(saved?.fhirStore ?? '');
+  const [project, setProject] = useState(saved?.project ?? import.meta.env.VITE_GCP_PROJECT ?? '');
+  const [location, setLocation] = useState(saved?.location ?? import.meta.env.VITE_GCP_LOCATION ?? '');
+  const [dataset, setDataset] = useState(saved?.dataset ?? import.meta.env.VITE_GCP_DATASET ?? '');
+  const [fhirStore, setFhirStore] = useState(saved?.fhirStore ?? import.meta.env.VITE_GCP_FHIR_STORE ?? '');
 
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
-      onSubmit({ project, location, dataset, fhirStore });
+      onSubmit({ type: 'gcp', project, location, dataset, fhirStore });
     },
     [project, location, dataset, fhirStore, onSubmit]
   );

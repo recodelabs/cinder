@@ -9,6 +9,7 @@ export const RESOURCE_TYPES = [
   'Observation',
   'Condition',
   'Procedure',
+  'RelatedPerson',
   'MedicationRequest',
   'AllergyIntolerance',
   'Immunization',

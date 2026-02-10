@@ -22,14 +22,15 @@ export function ResourceDetail({ resource }: ResourceDetailProps): JSX.Element {
     <Paper p="md" withBorder>
       <Stack gap="sm">
         {Object.entries(elements).map(([key, element]) => {
-          const value = (resource as Record<string, unknown>)[key];
-          if (value === undefined || key === 'id' || key === 'resourceType' || key === 'meta') {
+          const value = (resource as unknown as Record<string, unknown>)[key];
+          if (value === undefined || key === 'id' || key === 'resourceType' || key === 'meta' || key === 'text' || key === 'contained') {
             return null;
           }
           return (
             <div key={key}>
               <Text size="sm" fw={600} c="dimmed">{humanizeKey(key)}</Text>
               <ResourcePropertyDisplay
+                path={`${resource.resourceType}.${key}`}
                 property={element}
                 propertyType={element.type[0]?.code ?? 'string'}
                 value={value}

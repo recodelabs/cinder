@@ -7,11 +7,13 @@ import { expandValueSet } from './valuesets';
 
 export interface HealthcareMedplumClientConfig {
   getAccessToken: () => string | undefined;
+  storeBaseUrl?: string;
 }
 
 export class HealthcareMedplumClient extends MedplumClient {
   constructor(config: HealthcareMedplumClientConfig) {
     const getAccessToken = config.getAccessToken;
+    const storeBaseUrl = config.storeBaseUrl;
 
     super({
       baseUrl: globalThis.location?.origin ?? 'http://localhost:5173',
@@ -21,6 +23,9 @@ export class HealthcareMedplumClient extends MedplumClient {
         const headers = new Headers(init?.headers);
         if (token) {
           headers.set('Authorization', `Bearer ${token}`);
+        }
+        if (storeBaseUrl) {
+          headers.set('X-Store-Base', storeBaseUrl);
         }
         return fetch(url, { ...init, headers });
       },

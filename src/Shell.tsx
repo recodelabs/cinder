@@ -1,6 +1,6 @@
 // ABOUTME: Application shell with sidebar navigation, header search, and route outlet.
 // ABOUTME: Provides the main layout: header with search, filterable sidebar, content area.
-import { Anchor, AppShell, Group, Kbd, NavLink, Stack, Text, TextInput, Title } from '@mantine/core';
+import { Anchor, AppShell, Button, Group, Kbd, NavLink, Stack, Text, TextInput, Title } from '@mantine/core';
 import { useDebouncedCallback } from '@mantine/hooks';
 import { getDisplayString } from '@medplum/core';
 import type { Bundle, Resource, ResourceType } from '@medplum/fhirtypes';
@@ -10,15 +10,20 @@ import { IconFilter, IconSearch } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router';
+import { useAuth } from './auth/AuthProvider';
 import { RESOURCE_TYPES } from './constants';
 
-export function Shell(): JSX.Element {
+interface ShellProps {
+  readonly onChangeStore?: () => void;
+}
+
+export function Shell({ onChangeStore }: ShellProps = {}): JSX.Element {
+  const { signOut } = useAuth();
   const medplum = useMedplum();
   const navigate = useNavigate();
   const location = useLocation();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Resource[]>([]);
-  const [loading, setLoading] = useState(false);
   const [sidebarFilter, setSidebarFilter] = useState('');
 
   const activeResourceType = location.pathname.split('/')[1] || '';
@@ -36,18 +41,15 @@ export function Shell(): JSX.Element {
       setResults([]);
       return;
     }
-    setLoading(true);
     try {
       const searches = (['Patient', 'Practitioner', 'Organization'] as ResourceType[]).map((type) =>
-        medplum.search(type, { name: q, _count: '5' }).catch(() => ({ entry: [] }) as Bundle)
+        medplum.search(type, { name: q, _count: '5' }).catch(() => ({ resourceType: 'Bundle', type: 'searchset', entry: [] }) as Bundle)
       );
       const bundles = await Promise.all(searches);
       const resources = bundles.flatMap((b) => (b.entry ?? []).map((e) => e.resource).filter(Boolean)) as Resource[];
       setResults(resources);
     } catch {
       setResults([]);
-    } finally {
-      setLoading(false);
     }
   }, 300);
 
@@ -75,11 +77,17 @@ export function Shell(): JSX.Element {
             onClick={() => spotlight.open()}
             readOnly
           />
+          {onChangeStore && (
+            <Group gap="xs" ml="auto">
+              <Button variant="subtle" size="compact-sm" onClick={onChangeStore}>Change Store</Button>
+              <Button variant="subtle" size="compact-sm" onClick={signOut}>Sign Out</Button>
+            </Group>
+          )}
         </Group>
       </AppShell.Header>
 
       <Spotlight.Root query={query} onQueryChange={handleQueryChange} shortcut={['mod + K']}>
-        <Spotlight.Search placeholder="Search resources..." leftSection={<IconSearch size={20} />} loading={loading} />
+        <Spotlight.Search placeholder="Search resources..." leftSection={<IconSearch size={20} />} />
         <Spotlight.ActionsList>
           {results.length > 0 ? (
             results.map((r) => (

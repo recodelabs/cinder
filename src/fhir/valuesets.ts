@@ -16,7 +16,7 @@ function ensureIndexed(): void {
   }
   for (const bundle of [valueSetsBundle, v3CodeSystemsBundle, v2TablesBundle] as unknown as Bundle[]) {
     for (const entry of bundle.entry ?? []) {
-      const resource = entry.resource;
+      const resource = entry.resource as (CodeSystem | ValueSet) | undefined;
       if (!resource?.url) {
         continue;
       }
@@ -84,6 +84,7 @@ export function expandValueSet(url: string, filter?: string): ValueSet | undefin
 
   return {
     resourceType: 'ValueSet',
+    status: 'active',
     url: vs.url,
     expansion: {
       timestamp: new Date().toISOString(),
