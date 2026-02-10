@@ -9,7 +9,7 @@ interface ServerOptions {
 }
 
 export function createServer(options: ServerOptions = {}) {
-  const port = options.port ?? Number(process.env.PORT) ?? 3000;
+  const port = options.port ?? (process.env.PORT ? Number(process.env.PORT) : 3000);
   const distDir = options.distDir ?? './dist';
 
   return Bun.serve({
