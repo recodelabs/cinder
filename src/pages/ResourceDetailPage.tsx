@@ -8,6 +8,7 @@ import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { safeErrorMessage } from '../errors';
+import { PatientRelationships } from './PatientRelationships';
 import { ResourceDetail } from './ResourceDetail';
 import { ResourceHeader } from './ResourceHeader';
 import { ResourceJsonTab } from './ResourceJsonTab';
@@ -91,6 +92,7 @@ export function ResourceDetailPage(): JSX.Element {
             </Group>
             <Tabs.Panel value="details" pt="md">
               <ResourceDetail resource={resource} />
+              {resourceType === 'Patient' && id && <PatientRelationships patientId={id} />}
             </Tabs.Panel>
             <Tabs.Panel value="edit" pt="md">
               <ResourceForm defaultValue={resource} onSubmit={handleSubmit} />

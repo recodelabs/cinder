@@ -46,6 +46,16 @@ describe('expandValueSet', () => {
     expect(codes).not.toContain('male');
   });
 
+  it('expands versioned ValueSet URL by stripping version suffix', () => {
+    const result = expandValueSet('http://hl7.org/fhir/ValueSet/link-type|4.0.1');
+    expect(result).toBeDefined();
+    const codes = result!.expansion!.contains!.map((c) => c.code);
+    expect(codes).toContain('replaced-by');
+    expect(codes).toContain('replaces');
+    expect(codes).toContain('refer');
+    expect(codes).toContain('seealso');
+  });
+
   it('returns undefined for unknown ValueSet', () => {
     const result = expandValueSet('http://example.com/unknown');
     expect(result).toBeUndefined();

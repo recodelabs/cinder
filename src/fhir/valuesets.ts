@@ -45,7 +45,8 @@ function collectConcepts(cs: CodeSystem, concepts: CodeSystem['concept'], result
 
 export function expandValueSet(url: string, filter?: string): ValueSet | undefined {
   ensureIndexed();
-  const vs = valueSetIndex.get(url);
+  const bareUrl = url.split('|')[0];
+  const vs = valueSetIndex.get(bareUrl);
   if (!vs) {
     return undefined;
   }
