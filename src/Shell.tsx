@@ -24,7 +24,6 @@ export function Shell({ onChangeStore }: ShellProps = {}): JSX.Element {
   const location = useLocation();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Resource[]>([]);
-  const [loading, setLoading] = useState(false);
   const [sidebarFilter, setSidebarFilter] = useState('');
 
   const activeResourceType = location.pathname.split('/')[1] || '';
@@ -42,18 +41,15 @@ export function Shell({ onChangeStore }: ShellProps = {}): JSX.Element {
       setResults([]);
       return;
     }
-    setLoading(true);
     try {
       const searches = (['Patient', 'Practitioner', 'Organization'] as ResourceType[]).map((type) =>
-        medplum.search(type, { name: q, _count: '5' }).catch(() => ({ entry: [] }) as Bundle)
+        medplum.search(type, { name: q, _count: '5' }).catch(() => ({ resourceType: 'Bundle', type: 'searchset', entry: [] }) as Bundle)
       );
       const bundles = await Promise.all(searches);
       const resources = bundles.flatMap((b) => (b.entry ?? []).map((e) => e.resource).filter(Boolean)) as Resource[];
       setResults(resources);
     } catch {
       setResults([]);
-    } finally {
-      setLoading(false);
     }
   }, 300);
 
@@ -91,7 +87,7 @@ export function Shell({ onChangeStore }: ShellProps = {}): JSX.Element {
       </AppShell.Header>
 
       <Spotlight.Root query={query} onQueryChange={handleQueryChange} shortcut={['mod + K']}>
-        <Spotlight.Search placeholder="Search resources..." leftSection={<IconSearch size={20} />} loading={loading} />
+        <Spotlight.Search placeholder="Search resources..." leftSection={<IconSearch size={20} />} />
         <Spotlight.ActionsList>
           {results.length > 0 ? (
             results.map((r) => (
