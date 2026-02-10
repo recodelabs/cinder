@@ -63,6 +63,13 @@ export default defineConfig(({ mode }) => {
           target: targetBase,
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/fhir/, ''),
+          router: (req) => {
+            const storeBase = req.headers['x-store-base'];
+            if (typeof storeBase === 'string') {
+              return `${storeBase}/fhir`;
+            }
+            return targetBase;
+          },
         },
       },
     },
