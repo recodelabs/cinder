@@ -27,7 +27,7 @@ export function FhirProvider({ storeConfig, children }: FhirProviderProps): JSX.
   const medplum = useMemo(() => {
     return new HealthcareMedplumClient({
       getAccessToken: () => accessToken,
-      baseUrl: storeConfig ? storeBaseUrl(storeConfig) : undefined,
+      storeBaseUrl: storeConfig ? storeBaseUrl(storeConfig) : undefined,
     });
   }, [accessToken, storeConfig]);
 
