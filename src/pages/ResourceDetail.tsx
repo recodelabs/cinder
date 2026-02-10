@@ -30,6 +30,7 @@ export function ResourceDetail({ resource }: ResourceDetailProps): JSX.Element {
             <div key={key}>
               <Text size="sm" fw={600} c="dimmed">{humanizeKey(key)}</Text>
               <ResourcePropertyDisplay
+                path={`${resource.resourceType}.${key}`}
                 property={element}
                 propertyType={element.type[0]?.code ?? 'string'}
                 value={value}
