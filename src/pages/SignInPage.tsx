@@ -10,8 +10,8 @@ export function SignInPage(): JSX.Element {
 
   return (
     <Center h="100vh">
-      <Stack align="center" gap="lg">
-        <CinderLogo size={64} />
+      <Stack align="center" gap="xs">
+        <CinderLogo size={80} />
         <Title order={1}>Cinder</Title>
         <Text size="lg" c="dimmed">FHIR Browser</Text>
         <Button size="lg" onClick={signIn}>Sign in with Google</Button>
