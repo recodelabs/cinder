@@ -41,10 +41,19 @@ describe('StoreSelector', () => {
     const onSubmit = vi.fn();
     renderWithMantine(<StoreSelector onSubmit={onSubmit} />);
 
-    await user.type(screen.getByRole('textbox', { name: /project id/i }), 'my-project');
-    await user.type(screen.getByRole('textbox', { name: /location/i }), 'us-central1');
-    await user.type(screen.getByRole('textbox', { name: /dataset/i }), 'my-dataset');
-    await user.type(screen.getByRole('textbox', { name: /fhir store/i }), 'my-store');
+    const projectInput = screen.getByRole('textbox', { name: /project id/i });
+    const locationInput = screen.getByRole('textbox', { name: /location/i });
+    const datasetInput = screen.getByRole('textbox', { name: /dataset/i });
+    const storeInput = screen.getByRole('textbox', { name: /fhir store/i });
+
+    await user.clear(projectInput);
+    await user.type(projectInput, 'my-project');
+    await user.clear(locationInput);
+    await user.type(locationInput, 'us-central1');
+    await user.clear(datasetInput);
+    await user.type(datasetInput, 'my-dataset');
+    await user.clear(storeInput);
+    await user.type(storeInput, 'my-store');
     await user.click(screen.getByRole('button', { name: /connect/i }));
 
     expect(onSubmit).toHaveBeenCalledWith({
