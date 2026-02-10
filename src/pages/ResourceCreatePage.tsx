@@ -7,6 +7,7 @@ import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router';
+import { safeErrorMessage } from '../errors';
 
 interface ResourceCreatePageProps {
   readonly resourceType: string;
@@ -30,7 +31,7 @@ export function ResourceCreatePage({ resourceType }: ResourceCreatePageProps): J
 
   return (
     <Stack>
-      {error && <Alert color="red">{error.message}</Alert>}
+      {error && <Alert color="red">{safeErrorMessage(error)}</Alert>}
       <ResourceForm
         defaultValue={{ resourceType } as Partial<Resource>}
         onSubmit={handleSubmit}

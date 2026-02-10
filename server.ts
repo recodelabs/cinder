@@ -1,16 +1,51 @@
 // ABOUTME: Bun production server for the Cinder SPA.
 // ABOUTME: Serves static files from dist/, proxies /fhir/* using X-Store-Base header.
 import { existsSync } from 'fs';
-import { join } from 'path';
+import { join, resolve } from 'path';
+
+const HEALTHCARE_API_PATTERN =
+  /^https:\/\/healthcare\.googleapis\.com\/v1\/projects\/[\w-]+\/locations\/[\w-]+\/datasets\/[\w-]+\/fhirStores\/[\w-]+$/;
+
+export function isValidStoreBase(storeBase: string): boolean {
+  return HEALTHCARE_API_PATTERN.test(storeBase);
+}
+
+const SECURITY_HEADERS: Record<string, string> = {
+  'Content-Security-Policy': [
+    "default-src 'self'",
+    "script-src 'self' https://accounts.google.com",
+    "connect-src 'self' https://healthcare.googleapis.com https://tx.fhir.org",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data:",
+    "frame-ancestors 'none'",
+  ].join('; '),
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+};
+
+function withSecurityHeaders(response: Response): Response {
+  const headers = new Headers(response.headers);
+  for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
+    headers.set(key, value);
+  }
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
 
 interface ServerOptions {
   port?: number;
   distDir?: string;
+  validateStoreBase?: (url: string) => boolean;
 }
 
 export function createServer(options: ServerOptions = {}) {
   const port = options.port ?? (process.env.PORT ? Number(process.env.PORT) : 3000);
   const distDir = options.distDir ?? './dist';
+  const validateStore = options.validateStoreBase ?? isValidStoreBase;
 
   return Bun.serve({
     port,
@@ -19,26 +54,27 @@ export function createServer(options: ServerOptions = {}) {
 
       // FHIR proxy
       if (url.pathname.startsWith('/fhir')) {
-        return handleFhirProxy(req, url);
+        return withSecurityHeaders(await handleFhirProxy(req, url, validateStore));
       }
 
-      // Static file serving
-      const filePath = join(distDir, url.pathname);
-      if (url.pathname !== '/' && existsSync(filePath)) {
-        return new Response(Bun.file(filePath));
+      // Static file serving with path traversal protection
+      const resolvedDist = resolve(distDir);
+      const filePath = resolve(distDir, '.' + url.pathname);
+      if (url.pathname !== '/' && filePath.startsWith(resolvedDist) && existsSync(filePath)) {
+        return withSecurityHeaders(new Response(Bun.file(filePath)));
       }
 
       // SPA fallback
-      return new Response(Bun.file(join(distDir, 'index.html')));
+      return withSecurityHeaders(new Response(Bun.file(join(distDir, 'index.html'))));
     },
   });
 }
 
-async function handleFhirProxy(req: Request, url: URL): Promise<Response> {
+async function handleFhirProxy(req: Request, url: URL, validateStore: (url: string) => boolean): Promise<Response> {
   const storeBase = req.headers.get('X-Store-Base');
-  if (!storeBase) {
+  if (!storeBase || !validateStore(storeBase)) {
     return Response.json(
-      { error: 'X-Store-Base header is required for FHIR proxy requests' },
+      { error: 'X-Store-Base header must be a valid GCP Healthcare API FHIR store URL' },
       { status: 400 }
     );
   }

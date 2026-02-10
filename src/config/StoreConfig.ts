@@ -1,4 +1,4 @@
-// ABOUTME: Type definition, localStorage persistence, and URL generation for FHIR store config.
+// ABOUTME: Type definition, sessionStorage persistence, and URL generation for FHIR store config.
 // ABOUTME: Stores GCP project/location/dataset/store coordinates.
 
 export interface StoreConfig {
@@ -13,7 +13,7 @@ const STORAGE_KEY = 'cinder:store-config';
 
 export function loadStoreConfig(): StoreConfig | undefined {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = sessionStorage.getItem(STORAGE_KEY);
     return raw ? (JSON.parse(raw) as StoreConfig) : undefined;
   } catch {
     return undefined;
@@ -21,7 +21,7 @@ export function loadStoreConfig(): StoreConfig | undefined {
 }
 
 export function saveStoreConfig(config: StoreConfig): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+  sessionStorage.setItem(STORAGE_KEY, JSON.stringify(config));
 }
 
 export function storeBaseUrl(config: StoreConfig): string {

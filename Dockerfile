@@ -8,9 +8,11 @@ ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
 RUN bun run build
 
 FROM oven/bun:1
+RUN adduser --disabled-password --gecos "" cinder
 WORKDIR /app
-COPY --from=build /app/dist ./dist
-COPY --from=build /app/server.ts .
-COPY --from=build /app/package.json .
+COPY --from=build --chown=cinder /app/dist ./dist
+COPY --from=build --chown=cinder /app/server.ts .
+COPY --from=build --chown=cinder /app/package.json .
+USER cinder
 EXPOSE 3000
 CMD ["bun", "server.ts"]

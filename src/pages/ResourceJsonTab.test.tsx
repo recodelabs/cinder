@@ -44,4 +44,20 @@ describe('ResourceJsonTab', () => {
     await userEvent.click(screen.getByRole('button', { name: 'OK' }));
     expect(onSubmit).toHaveBeenCalledWith(testPatient);
   });
+
+  it('shows error when JSON is invalid', async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn();
+    render(
+      <MantineProvider>
+        <ResourceJsonTab resource={testPatient} onSubmit={onSubmit} />
+      </MantineProvider>
+    );
+    const textarea = screen.getByRole('textbox');
+    await user.clear(textarea);
+    await user.type(textarea, '{{not json');
+    await user.click(screen.getByRole('button', { name: 'OK' }));
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(screen.getByText(/invalid json/i)).toBeDefined();
+  });
 });
