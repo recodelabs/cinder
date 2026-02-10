@@ -44,6 +44,14 @@ const testRelatedPerson: RelatedPerson = {
   relationship: [{ coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode', code: 'CHILD', display: 'child' }] }],
 };
 
+const testRelatedPersonWithIdentifier: RelatedPerson = {
+  resourceType: 'RelatedPerson',
+  id: 'rp-3',
+  patient: { reference: 'Patient/patient-abc' },
+  relationship: [{ coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode', code: 'CHILD', display: 'child' }] }],
+  identifier: [{ system: 'http://example.com/mrn', value: 'MRN-12345' }],
+};
+
 const testRelatedPersonNoRelationship: RelatedPerson = {
   resourceType: 'RelatedPerson',
   id: 'rp-2',
@@ -85,5 +93,11 @@ describe('ResourceHeader', () => {
   it('does not render relationship when RelatedPerson has none', () => {
     renderHeader(testRelatedPersonNoRelationship);
     expect(screen.getByText('RelatedPerson')).toBeDefined();
+  });
+
+  it('renders identifier system and value for RelatedPerson', () => {
+    renderHeader(testRelatedPersonWithIdentifier);
+    expect(screen.getByText('http://example.com/mrn')).toBeDefined();
+    expect(screen.getByText('MRN-12345')).toBeDefined();
   });
 });

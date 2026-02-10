@@ -3,7 +3,7 @@
 import { getDataType } from '@medplum/core';
 import type { Reference, Resource } from '@medplum/fhirtypes';
 import { ResourceName, ResourcePropertyDisplay } from '@medplum/react';
-import { Group, Paper, Stack, Text } from '@mantine/core';
+import { Group, Paper, Table, Text } from '@mantine/core';
 import type { JSX } from 'react';
 
 interface ResourceDetailProps {
@@ -35,31 +35,43 @@ export function ResourceDetail({ resource }: ResourceDetailProps): JSX.Element {
   const schema = getDataType(resource.resourceType);
   const elements = schema?.elements ?? {};
 
+  const skipFields = new Set(['resourceType', 'meta', 'text', 'contained']);
+
   return (
     <Paper p="md" withBorder>
-      <Stack gap="sm">
-        {Object.entries(elements).map(([key, element]) => {
-          const value = (resource as unknown as Record<string, unknown>)[key];
-          if (value === undefined || key === 'id' || key === 'resourceType' || key === 'meta' || key === 'text' || key === 'contained') {
-            return null;
-          }
-          return (
-            <div key={key}>
-              <Text size="sm" fw={600} c="dimmed">{humanizeKey(key)}</Text>
-              {isReferenceType(element) ? (
-                <ReferenceValue value={value} />
-              ) : (
-                <ResourcePropertyDisplay
-                  path={`${resource.resourceType}.${key}`}
-                  property={element}
-                  propertyType={element.type[0]?.code ?? 'string'}
-                  value={value}
-                />
-              )}
-            </div>
-          );
-        })}
-      </Stack>
+      <Table>
+        <Table.Tbody>
+          <Table.Tr>
+            <Table.Td w={200}><Text size="sm" fw={600}>ID</Text></Table.Td>
+            <Table.Td><Text size="sm">{resource.id}</Text></Table.Td>
+          </Table.Tr>
+          {Object.entries(elements).map(([key, element]) => {
+            if (skipFields.has(key) || key === 'id') {
+              return null;
+            }
+            const value = (resource as unknown as Record<string, unknown>)[key];
+            return (
+              <Table.Tr key={key}>
+                <Table.Td w={200}><Text size="sm" fw={600}>{humanizeKey(key)}</Text></Table.Td>
+                <Table.Td>
+                  {value !== undefined && (
+                    isReferenceType(element) ? (
+                      <ReferenceValue value={value} />
+                    ) : (
+                      <ResourcePropertyDisplay
+                        path={`${resource.resourceType}.${key}`}
+                        property={element}
+                        propertyType={element.type[0]?.code ?? 'string'}
+                        value={value}
+                      />
+                    )
+                  )}
+                </Table.Td>
+              </Table.Tr>
+            );
+          })}
+        </Table.Tbody>
+      </Table>
     </Paper>
   );
 }

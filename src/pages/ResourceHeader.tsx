@@ -72,6 +72,14 @@ export function ResourceHeader({ resource }: ResourceHeaderProps): JSX.Element {
                 <Text size="sm">{getRelationshipDisplay(resource)}</Text>
               </Stack>
             )}
+            {resource.identifier?.[0] && (
+              <Stack gap={0}>
+                <Text size="xs" c="dimmed" tt="uppercase">
+                  {resource.identifier[0].system ?? 'Identifier'}
+                </Text>
+                <Text size="sm">{resource.identifier[0].value}</Text>
+              </Stack>
+            )}
           </Group>
         )}
       </Group>

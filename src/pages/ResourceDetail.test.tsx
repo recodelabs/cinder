@@ -79,4 +79,27 @@ describe('ResourceDetail', () => {
       expect(screen.getByText('Ricardo Goncalves')).toBeDefined();
     });
   });
+
+  it('renders resource id', () => {
+    renderWithProviders(<ResourceDetail resource={testPatient} />);
+    expect(screen.getByText('ID')).toBeDefined();
+    expect(screen.getByText('test-1')).toBeDefined();
+  });
+
+  it('renders as a table', () => {
+    const { container } = renderWithProviders(<ResourceDetail resource={testPatient} />);
+    expect(container.querySelector('table')).not.toBeNull();
+    expect(container.querySelectorAll('tr').length).toBeGreaterThan(0);
+  });
+
+  it('renders labels for empty fields', () => {
+    const patientNoGender: Patient = {
+      resourceType: 'Patient',
+      id: 'test-2',
+      name: [{ family: 'Doe', given: ['Jane'] }],
+    };
+    renderWithProviders(<ResourceDetail resource={patientNoGender} />);
+    expect(screen.getByText('Gender')).toBeDefined();
+    expect(screen.getByText('Birth Date')).toBeDefined();
+  });
 });
