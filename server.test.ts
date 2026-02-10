@@ -22,6 +22,27 @@ afterAll(() => {
   rmSync(TEST_DIST, { recursive: true, force: true });
 });
 
+describe('security headers', () => {
+  it('includes Content-Security-Policy on HTML responses', async () => {
+    const res = await fetch(`${baseUrl}/`);
+    const csp = res.headers.get('Content-Security-Policy');
+    expect(csp).toBeTruthy();
+    expect(csp).toContain("default-src 'self'");
+    expect(csp).toContain('accounts.google.com');
+    expect(csp).toContain('healthcare.googleapis.com');
+  });
+
+  it('includes X-Content-Type-Options header', async () => {
+    const res = await fetch(`${baseUrl}/`);
+    expect(res.headers.get('X-Content-Type-Options')).toBe('nosniff');
+  });
+
+  it('includes X-Frame-Options header', async () => {
+    const res = await fetch(`${baseUrl}/`);
+    expect(res.headers.get('X-Frame-Options')).toBe('DENY');
+  });
+});
+
 describe('static file serving', () => {
   it('serves index.html at root', async () => {
     const res = await fetch(`${baseUrl}/`);

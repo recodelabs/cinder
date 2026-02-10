@@ -10,6 +10,32 @@ export function isValidStoreBase(storeBase: string): boolean {
   return HEALTHCARE_API_PATTERN.test(storeBase);
 }
 
+const SECURITY_HEADERS: Record<string, string> = {
+  'Content-Security-Policy': [
+    "default-src 'self'",
+    "script-src 'self' https://accounts.google.com",
+    "connect-src 'self' https://healthcare.googleapis.com https://tx.fhir.org",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data:",
+    "frame-ancestors 'none'",
+  ].join('; '),
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+};
+
+function withSecurityHeaders(response: Response): Response {
+  const headers = new Headers(response.headers);
+  for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
+    headers.set(key, value);
+  }
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
 interface ServerOptions {
   port?: number;
   distDir?: string;
@@ -28,18 +54,18 @@ export function createServer(options: ServerOptions = {}) {
 
       // FHIR proxy
       if (url.pathname.startsWith('/fhir')) {
-        return handleFhirProxy(req, url, validateStore);
+        return withSecurityHeaders(await handleFhirProxy(req, url, validateStore));
       }
 
       // Static file serving with path traversal protection
       const resolvedDist = resolve(distDir);
       const filePath = resolve(distDir, '.' + url.pathname);
       if (url.pathname !== '/' && filePath.startsWith(resolvedDist) && existsSync(filePath)) {
-        return new Response(Bun.file(filePath));
+        return withSecurityHeaders(new Response(Bun.file(filePath)));
       }
 
       // SPA fallback
-      return new Response(Bun.file(join(distDir, 'index.html')));
+      return withSecurityHeaders(new Response(Bun.file(join(distDir, 'index.html'))));
     },
   });
 }
