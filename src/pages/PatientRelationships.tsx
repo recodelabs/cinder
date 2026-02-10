@@ -1,33 +1,69 @@
 // ABOUTME: Displays RelatedPerson resources linked to a Patient.
-// ABOUTME: Queries RelatedPerson?patient={id} and renders a list with relationship type and link.
+// ABOUTME: Resolves linked patient identifiers to show patient names with links.
 import { Anchor, Loader, Paper, Stack, Text } from '@mantine/core';
 import { getDisplayString } from '@medplum/core';
-import type { Bundle, RelatedPerson } from '@medplum/fhirtypes';
+import type { Bundle, Patient, RelatedPerson } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 
+const LINKED_PATIENT_SYSTEM = 'http://example.org/fhir/related-person-patient';
+
 interface PatientRelationshipsProps {
   readonly patientId: string;
 }
 
+interface ResolvedRelationship {
+  readonly rp: RelatedPerson;
+  readonly relationshipDisplay: string;
+  readonly linkedPatient?: Patient;
+}
+
+function getLinkedPatientId(rp: RelatedPerson): string | undefined {
+  return rp.identifier?.find((id) => id.system === LINKED_PATIENT_SYSTEM)?.value;
+}
+
+function getRelationshipDisplay(rp: RelatedPerson): string {
+  const coding = rp.relationship?.[0]?.coding?.[0];
+  return coding?.display ?? coding?.code ?? 'related';
+}
+
 export function PatientRelationships({ patientId }: PatientRelationshipsProps): JSX.Element {
   const medplum = useMedplum();
-  const [relationships, setRelationships] = useState<RelatedPerson[]>();
+  const [resolved, setResolved] = useState<ResolvedRelationship[]>();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
     medplum
       .search('RelatedPerson', 'patient=' + patientId)
-      .then((bundle: Bundle) => {
+      .then(async (bundle: Bundle) => {
         const entries = (bundle.entry ?? [])
           .map((e) => e.resource as RelatedPerson)
           .filter(Boolean);
-        setRelationships(entries);
+
+        const results: ResolvedRelationship[] = await Promise.all(
+          entries.map(async (rp) => {
+            const linkedId = getLinkedPatientId(rp);
+            let linkedPatient: Patient | undefined;
+            if (linkedId) {
+              try {
+                linkedPatient = await medplum.readResource('Patient', linkedId) as Patient;
+              } catch {
+                // Linked patient not found — fall back to RP display
+              }
+            }
+            return {
+              rp,
+              relationshipDisplay: getRelationshipDisplay(rp),
+              linkedPatient,
+            };
+          })
+        );
+        setResolved(results);
       })
-      .catch(() => setRelationships([]))
+      .catch(() => setResolved([]))
       .finally(() => setLoading(false));
   }, [medplum, patientId]);
 
@@ -35,7 +71,7 @@ export function PatientRelationships({ patientId }: PatientRelationshipsProps): 
     return <Loader size="sm" />;
   }
 
-  if (!relationships || relationships.length === 0) {
+  if (!resolved || resolved.length === 0) {
     return (
       <Paper p="md" withBorder>
         <Text c="dimmed">No relationships found</Text>
@@ -47,17 +83,20 @@ export function PatientRelationships({ patientId }: PatientRelationshipsProps): 
     <Paper p="md" withBorder>
       <Stack gap="xs">
         <Text fw={600}>Relationships</Text>
-        {relationships.map((rp) => {
-          const relationshipType = rp.relationship?.[0]?.coding?.[0]?.display ?? 'related';
-          return (
-            <Text key={rp.id} size="sm">
-              {relationshipType} &mdash;{' '}
+        {resolved.map(({ rp, relationshipDisplay, linkedPatient }) => (
+          <Text key={rp.id} size="sm">
+            {relationshipDisplay} &mdash;{' '}
+            {linkedPatient ? (
+              <Anchor component={Link} to={`/Patient/${linkedPatient.id}`}>
+                {getDisplayString(linkedPatient)}
+              </Anchor>
+            ) : (
               <Anchor component={Link} to={`/RelatedPerson/${rp.id}`}>
                 {getDisplayString(rp)}
               </Anchor>
-            </Text>
-          );
-        })}
+            )}
+          </Text>
+        ))}
       </Stack>
     </Paper>
   );

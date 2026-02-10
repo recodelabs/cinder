@@ -5,9 +5,11 @@ import { MedplumProvider } from '@medplum/react-hooks';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
-import type { Bundle, RelatedPerson } from '@medplum/fhirtypes';
+import type { Bundle, Patient, RelatedPerson } from '@medplum/fhirtypes';
 import { HealthcareMedplumClient } from '../fhir/medplum-adapter';
 import { PatientRelationships } from './PatientRelationships';
+
+const IDENTIFIER_SYSTEM = 'http://example.org/fhir/related-person-patient';
 
 function renderRelationships(
   patientId: string,
@@ -28,9 +30,25 @@ function renderRelationships(
   return { ...result, medplum };
 }
 
-const childRelatedPerson: RelatedPerson = {
+const linkedChild: Patient = {
+  resourceType: 'Patient',
+  id: 'child-123',
+  name: [{ family: 'Berg', given: ['Milton'] }],
+};
+
+const parentOfRelatedPerson: RelatedPerson = {
   resourceType: 'RelatedPerson',
   id: 'rp-1',
+  patient: { reference: 'Patient/pat-1' },
+  relationship: [
+    { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode', code: 'CHILD', display: 'Parent of' }] },
+  ],
+  identifier: [{ system: IDENTIFIER_SYSTEM, value: 'child-123' }],
+};
+
+const rpWithoutIdentifier: RelatedPerson = {
+  resourceType: 'RelatedPerson',
+  id: 'rp-2',
   patient: { reference: 'Patient/pat-1' },
   name: [{ family: 'Smith', given: ['Jane'] }],
   relationship: [
@@ -45,10 +63,17 @@ const emptyBundle: Bundle = {
   total: 0,
 };
 
-const bundleWithChild: Bundle = {
+const bundleWithParentOf: Bundle = {
   resourceType: 'Bundle',
   type: 'searchset',
-  entry: [{ resource: childRelatedPerson }],
+  entry: [{ resource: parentOfRelatedPerson }],
+  total: 1,
+};
+
+const bundleWithNoIdentifier: Bundle = {
+  resourceType: 'Bundle',
+  type: 'searchset',
+  entry: [{ resource: rpWithoutIdentifier }],
   total: 1,
 };
 
@@ -60,20 +85,29 @@ describe('PatientRelationships', () => {
     expect(await screen.findByText('No relationships found')).toBeDefined();
   });
 
-  it('renders relationship type and name', async () => {
+  it('resolves linked patient and shows their name', async () => {
     renderRelationships('pat-1', (medplum) => {
-      vi.spyOn(medplum, 'search').mockResolvedValue(bundleWithChild as any);
+      vi.spyOn(medplum, 'search').mockResolvedValue(bundleWithParentOf as any);
+      vi.spyOn(medplum, 'readResource').mockResolvedValue(linkedChild);
     });
-    expect(await screen.findByText(/child/)).toBeDefined();
-    expect(screen.getByText('Jane Smith')).toBeDefined();
+    expect(await screen.findByText('Milton Berg')).toBeDefined();
+    expect(screen.getByText(/Parent of/)).toBeDefined();
   });
 
-  it('links to the RelatedPerson detail page', async () => {
+  it('links to the linked Patient page', async () => {
     renderRelationships('pat-1', (medplum) => {
-      vi.spyOn(medplum, 'search').mockResolvedValue(bundleWithChild as any);
+      vi.spyOn(medplum, 'search').mockResolvedValue(bundleWithParentOf as any);
+      vi.spyOn(medplum, 'readResource').mockResolvedValue(linkedChild);
     });
-    const link = await screen.findByRole('link', { name: 'Jane Smith' });
-    expect(link.getAttribute('href')).toBe('/RelatedPerson/rp-1');
+    const link = await screen.findByRole('link', { name: 'Milton Berg' });
+    expect(link.getAttribute('href')).toBe('/Patient/child-123');
+  });
+
+  it('falls back to RP display string when no linked patient identifier', async () => {
+    renderRelationships('pat-1', (medplum) => {
+      vi.spyOn(medplum, 'search').mockResolvedValue(bundleWithNoIdentifier as any);
+    });
+    expect(await screen.findByText('Jane Smith')).toBeDefined();
   });
 
   it('searches for RelatedPerson with patient parameter', async () => {
