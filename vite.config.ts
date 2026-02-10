@@ -21,7 +21,7 @@ function gcpAuthPlugin(saPath: string): Plugin {
     configureServer(server) {
       if (!auth) return;
       server.middlewares.use(async (req, _res, next) => {
-        if (req.url?.startsWith('/fhir')) {
+        if (req.url?.startsWith('/fhir') && !req.headers['authorization']) {
           try {
             const client = await auth.getClient();
             const token = await client.getAccessToken();

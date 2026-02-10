@@ -39,7 +39,7 @@ function AppContent(): JSX.Element {
   }
 
   return (
-    <FhirProvider storeConfig={storeConfig}>
+    <FhirProvider>
       <Routes>
         <Route element={<Shell onChangeStore={isDevProxy ? undefined : handleChangeStore} />}>
           <Route index element={<HomePage />} />
