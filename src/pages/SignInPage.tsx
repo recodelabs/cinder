@@ -11,11 +11,13 @@ export function SignInPage(): JSX.Element {
   return (
     <Center h="100vh">
       <Stack align="center" gap="lg">
-        <Group gap="sm">
-          <CinderLogo size={48} />
-          <Title order={1}>Cinder</Title>
-        </Group>
-        <Text size="lg" c="dimmed">FHIR Browser</Text>
+        <Stack align="center" gap={0}>
+          <Group gap={6}>
+            <CinderLogo size={48} />
+            <Title order={1}>Cinder</Title>
+          </Group>
+          <Text size="lg" c="dimmed">FHIR Browser</Text>
+        </Stack>
         <Button size="lg" onClick={signIn}>Sign in with Google</Button>
       </Stack>
     </Center>
