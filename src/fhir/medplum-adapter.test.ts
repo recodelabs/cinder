@@ -78,6 +78,38 @@ describe('HealthcareMedplumClient', () => {
     expect(url.origin).not.toContain('googleapis.com');
   });
 
+  it('calls onUnauthenticated when fetch returns 401', async () => {
+    const onUnauthenticated = vi.fn();
+    const client = new HealthcareMedplumClient({
+      getAccessToken: () => 'expired-tok',
+      onUnauthenticated,
+    });
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 401,
+      json: () => Promise.resolve({ issue: [{ details: { text: 'Unauthorized' } }] }),
+      headers: new Headers({ 'content-type': 'application/fhir+json' }),
+    });
+    await expect(client.readResource('Patient', '123')).rejects.toThrow();
+    expect(onUnauthenticated).toHaveBeenCalled();
+  });
+
+  it('does not call onUnauthenticated for non-401 errors', async () => {
+    const onUnauthenticated = vi.fn();
+    const client = new HealthcareMedplumClient({
+      getAccessToken: () => 'tok',
+      onUnauthenticated,
+    });
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 404,
+      json: () => Promise.resolve({ issue: [{ details: { text: 'Not found' } }] }),
+      headers: new Headers({ 'content-type': 'application/fhir+json' }),
+    });
+    await expect(client.readResource('Patient', '123')).rejects.toThrow();
+    expect(onUnauthenticated).not.toHaveBeenCalled();
+  });
+
   it('valueSetExpand falls back to server for unknown ValueSets', async () => {
     const client = new HealthcareMedplumClient({ getAccessToken: () => 'tok' });
     mockFetch.mockResolvedValue({

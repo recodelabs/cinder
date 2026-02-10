@@ -8,17 +8,19 @@ import { expandValueSet } from './valuesets';
 export interface HealthcareMedplumClientConfig {
   getAccessToken: () => string | undefined;
   storeBaseUrl?: string;
+  onUnauthenticated?: () => void;
 }
 
 export class HealthcareMedplumClient extends MedplumClient {
   constructor(config: HealthcareMedplumClientConfig) {
     const getAccessToken = config.getAccessToken;
     const storeBaseUrl = config.storeBaseUrl;
+    const onUnauthenticated = config.onUnauthenticated;
 
     super({
       baseUrl: globalThis.location?.origin ?? 'http://localhost:5173',
       fhirUrlPath: 'fhir',
-      fetch: (url: string | URL, init?: RequestInit) => {
+      fetch: async (url: string | URL, init?: RequestInit) => {
         const token = getAccessToken();
         const headers = new Headers(init?.headers);
         if (token) {
@@ -27,7 +29,11 @@ export class HealthcareMedplumClient extends MedplumClient {
         if (storeBaseUrl) {
           headers.set('X-Store-Base', storeBaseUrl);
         }
-        return fetch(url, { ...init, headers });
+        const response = await fetch(url, { ...init, headers });
+        if (response.status === 401 && onUnauthenticated) {
+          onUnauthenticated();
+        }
+        return response;
       },
     });
   }
