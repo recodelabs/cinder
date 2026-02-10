@@ -23,7 +23,7 @@ export function ResourceDetail({ resource }: ResourceDetailProps): JSX.Element {
       <Stack gap="sm">
         {Object.entries(elements).map(([key, element]) => {
           const value = (resource as Record<string, unknown>)[key];
-          if (value === undefined || key === 'id' || key === 'resourceType' || key === 'meta') {
+          if (value === undefined || key === 'id' || key === 'resourceType' || key === 'meta' || key === 'text' || key === 'contained') {
             return null;
           }
           return (
