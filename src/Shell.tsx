@@ -11,6 +11,7 @@ import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router';
 import { useAuth } from './auth/AuthProvider';
+import { CinderLogo } from './CinderLogo';
 import { RESOURCE_TYPES } from './constants';
 
 interface ShellProps {
@@ -66,7 +67,7 @@ export function Shell({ onChangeStore }: ShellProps = {}): JSX.Element {
     >
       <AppShell.Header>
         <Group h="100%" px="md">
-          <Anchor component={Link} to="/" underline="never" c="inherit"><Title order={3}>Cinder</Title></Anchor>
+          <Anchor component={Link} to="/" underline="never" c="inherit"><Group gap={8} wrap="nowrap"><CinderLogo /><Title order={3}>Cinder</Title></Group></Anchor>
           <Text size="sm" c="dimmed">FHIR Browser</Text>
           <TextInput
             placeholder="Search..."
