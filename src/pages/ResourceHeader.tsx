@@ -2,7 +2,7 @@
 // ABOUTME: Shows resource type, display name, and key fields like DOB and gender.
 import { Avatar, Badge, Group, Paper, Stack, Text } from '@mantine/core';
 import { getDisplayString } from '@medplum/core';
-import type { Patient, Resource } from '@medplum/fhirtypes';
+import type { Patient, RelatedPerson, Resource } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
 
 interface ResourceHeaderProps {
@@ -19,6 +19,15 @@ function getInitials(name: string): string {
 
 function isPatient(resource: Resource): resource is Patient {
   return resource.resourceType === 'Patient';
+}
+
+function isRelatedPerson(resource: Resource): resource is RelatedPerson {
+  return resource.resourceType === 'RelatedPerson';
+}
+
+function getRelationshipDisplay(resource: RelatedPerson): string | undefined {
+  const coding = resource.relationship?.[0]?.coding?.[0];
+  return coding?.display ?? coding?.code;
 }
 
 export function ResourceHeader({ resource }: ResourceHeaderProps): JSX.Element {
@@ -51,6 +60,16 @@ export function ResourceHeader({ resource }: ResourceHeaderProps): JSX.Element {
               <Stack gap={0}>
                 <Text size="xs" c="dimmed" tt="uppercase">Gender</Text>
                 <Text size="sm">{resource.gender}</Text>
+              </Stack>
+            )}
+          </Group>
+        )}
+        {isRelatedPerson(resource) && (
+          <Group ml="xl" gap="xl">
+            {getRelationshipDisplay(resource) && (
+              <Stack gap={0}>
+                <Text size="xs" c="dimmed" tt="uppercase">Relationship</Text>
+                <Text size="sm">{getRelationshipDisplay(resource)}</Text>
               </Stack>
             )}
           </Group>

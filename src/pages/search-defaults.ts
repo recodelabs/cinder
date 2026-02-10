@@ -36,6 +36,8 @@ function getDefaultFields(resourceType: string): string[] {
       return ['patient', 'code', 'clinical-status'];
     case 'Immunization':
       return ['patient', 'vaccine-code', 'date'];
+    case 'RelatedPerson':
+      return ['patient', 'relationship', '_lastUpdated'];
     case 'CarePlan':
       return ['subject', 'category', 'status'];
     case 'CareTeam':
