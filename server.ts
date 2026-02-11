@@ -79,7 +79,7 @@ async function handleFhirProxy(req: Request, url: URL, validateStore: (url: stri
     );
   }
 
-  const targetUrl = `${storeBase}${url.pathname}${url.search}`;
+  const targetUrl = `${storeBase}${url.pathname}${url.search.replace(/_cursor=/g, '_page_token=')}`;
 
   const headers = new Headers();
   const auth = req.headers.get('Authorization');

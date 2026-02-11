@@ -202,6 +202,30 @@ describe('FHIR proxy forwarding', () => {
     }
   });
 
+  it('rewrites _cursor to _page_token for GCP pagination', async () => {
+    const mockBackend = Bun.serve({
+      port: 0,
+      fetch(req) {
+        const url = new URL(req.url);
+        return Response.json({ receivedPath: url.pathname + url.search });
+      },
+    });
+
+    try {
+      const storeBase = `http://localhost:${mockBackend.port}/v1/projects/p/locations/l/datasets/d/fhirStores/s`;
+      const res = await fetch(`${proxyBaseUrl}/fhir/Patient?_cursor=abc123&_count=20`, {
+        headers: { 'X-Store-Base': storeBase },
+      });
+
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.receivedPath).toContain('_page_token=abc123');
+      expect(body.receivedPath).not.toContain('_cursor=');
+    } finally {
+      mockBackend.stop();
+    }
+  });
+
   it('forwards response status and headers from upstream', async () => {
     const mockBackend = Bun.serve({
       port: 0,
