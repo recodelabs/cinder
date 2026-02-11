@@ -3,7 +3,7 @@
 import { Anchor, Autocomplete, Button, Group, Loader, Select, Stack, Text, useCombobox } from '@mantine/core';
 import { useDebouncedCallback } from '@mantine/hooks';
 import { getDisplayString } from '@medplum/core';
-import type { Bundle, Patient, RelatedPerson } from '@medplum/fhirtypes';
+import type { Bundle, Patient, RelatedPerson, Resource } from '@medplum/fhirtypes';
 import { FormSection } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
@@ -21,7 +21,7 @@ export const RELATIONSHIP_TYPES = [
 ] as const;
 
 interface RelationshipCreator {
-  createResource: <T>(resource: T) => Promise<T>;
+  createResource: <T extends Resource>(resource: T) => Promise<T & { id: string }>;
 }
 
 export async function createBidirectionalRelationship(
