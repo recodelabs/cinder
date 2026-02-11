@@ -1,9 +1,10 @@
 // ABOUTME: Displays and manages RelatedPerson resources linked to a Patient.
 // ABOUTME: Includes inline form for creating bidirectional relationship pairs.
-import { Anchor, Autocomplete, Button, Group, Input, Loader, Select, Stack, Text, useCombobox } from '@mantine/core';
+import { Anchor, Autocomplete, Button, Group, Loader, Select, Stack, Text, useCombobox } from '@mantine/core';
 import { useDebouncedCallback } from '@mantine/hooks';
 import { getDisplayString } from '@medplum/core';
 import type { Bundle, Patient, RelatedPerson } from '@medplum/fhirtypes';
+import { FormSection } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
@@ -49,6 +50,7 @@ export async function createBidirectionalRelationship(
 
 interface PatientRelationshipsProps {
   readonly patientId: string;
+  readonly readonly?: boolean;
 }
 
 interface ResolvedRelationship {
@@ -114,8 +116,12 @@ function AddRelationshipForm({ patientId, onSaved, onCancel }: AddRelationshipFo
 
   const handleSearchChange = (value: string): void => {
     setSearchValue(value);
-    setSelectedPatientId(undefined);
-    searchPatients(value);
+    // Only clear selection if the user is typing a new query, not when
+    // Autocomplete fires onChange after an option was just selected.
+    if (!options.some((o) => o.label === value)) {
+      setSelectedPatientId(undefined);
+      searchPatients(value);
+    }
   };
 
   const handleOptionSubmit = (value: string): void => {
@@ -171,7 +177,7 @@ function AddRelationshipForm({ patientId, onSaved, onCancel }: AddRelationshipFo
   );
 }
 
-export function PatientRelationships({ patientId }: PatientRelationshipsProps): JSX.Element {
+export function PatientRelationships({ patientId, readonly }: PatientRelationshipsProps): JSX.Element {
   const medplum = useMedplum();
   const [resolved, setResolved] = useState<ResolvedRelationship[]>();
   const [loading, setLoading] = useState(true);
@@ -224,8 +230,12 @@ export function PatientRelationships({ patientId }: PatientRelationshipsProps): 
     return <Loader size="sm" />;
   }
 
+  if (readonly && (!resolved || resolved.length === 0)) {
+    return <></>;
+  }
+
   return (
-    <Input.Wrapper label="Relationships">
+    <FormSection title="Relationships">
       <Stack gap="xs" mt={4}>
         {resolved && resolved.length > 0 &&
           resolved.map(({ rp, relationshipDisplay, linkedPatient }) => (
@@ -242,7 +252,7 @@ export function PatientRelationships({ patientId }: PatientRelationshipsProps): 
               )}
             </Text>
           ))}
-        {showForm ? (
+        {!readonly && (showForm ? (
           <AddRelationshipForm
             patientId={patientId}
             onSaved={handleSaved}
@@ -255,11 +265,12 @@ export function PatientRelationships({ patientId }: PatientRelationshipsProps): 
             variant="subtle"
             leftSection={<IconCirclePlus size="1.25rem" />}
             onClick={() => setShowForm(true)}
+            style={{ alignSelf: 'flex-start' }}
           >
             Add Person
           </Button>
-        )}
+        ))}
       </Stack>
-    </Input.Wrapper>
+    </FormSection>
   );
 }

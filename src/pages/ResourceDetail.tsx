@@ -42,7 +42,7 @@ export function ResourceDetail({ resource }: ResourceDetailProps): JSX.Element {
       <Table>
         <Table.Tbody>
           <Table.Tr>
-            <Table.Td w={200}><Text size="sm" fw={600}>ID</Text></Table.Td>
+            <Table.Td w={200}><Text size="sm" fw={500}>ID</Text></Table.Td>
             <Table.Td><Text size="sm">{resource.id}</Text></Table.Td>
           </Table.Tr>
           {Object.entries(elements).map(([key, element]) => {
@@ -52,7 +52,7 @@ export function ResourceDetail({ resource }: ResourceDetailProps): JSX.Element {
             const value = (resource as unknown as Record<string, unknown>)[key];
             return (
               <Table.Tr key={key}>
-                <Table.Td w={200}><Text size="sm" fw={600}>{humanizeKey(key)}</Text></Table.Td>
+                <Table.Td w={200}><Text size="sm" fw={500}>{humanizeKey(key)}</Text></Table.Td>
                 <Table.Td>
                   {value !== undefined && (
                     isReferenceType(element) ? (
