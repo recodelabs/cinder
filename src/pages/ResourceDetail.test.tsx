@@ -8,7 +8,8 @@ import { MemoryRouter } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
 import { ResourceDetail } from './ResourceDetail';
 import { HealthcareMedplumClient } from '../fhir/medplum-adapter';
-import type { Patient } from '@medplum/fhirtypes';
+import type { Patient, RelatedPerson } from '@medplum/fhirtypes';
+import { ReadablePromise } from '@medplum/core';
 
 const testPatient: Patient = {
   resourceType: 'Patient',
@@ -18,9 +19,23 @@ const testPatient: Patient = {
   birthDate: '1990-01-15',
 };
 
-function renderWithProviders(ui: JSX.Element): ReturnType<typeof render> {
+const referencedPatient: Patient = {
+  resourceType: 'Patient',
+  id: 'patient-abc',
+  name: [{ family: 'Goncalves', given: ['Ricardo'] }],
+};
+
+const testRelatedPerson: RelatedPerson = {
+  resourceType: 'RelatedPerson',
+  id: 'rp-1',
+  patient: { reference: 'Patient/patient-abc' },
+  relationship: [{ coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode', code: 'CHILD', display: 'child' }] }],
+};
+
+function renderWithProviders(ui: JSX.Element, medplumOverrides?: (m: HealthcareMedplumClient) => void): ReturnType<typeof render> {
   vi.stubGlobal('fetch', vi.fn());
   const medplum = new HealthcareMedplumClient({ getAccessToken: () => 'test' });
+  medplumOverrides?.(medplum);
   return render(
     <MantineProvider>
       <MedplumProvider medplum={medplum}>
@@ -49,5 +64,42 @@ describe('ResourceDetail', () => {
     await waitFor(() => {
       expect(screen.getByText(/Smith/)).toBeDefined();
     });
+  });
+
+  it('renders resolved patient name for Reference fields', async () => {
+    renderWithProviders(
+      <ResourceDetail resource={testRelatedPerson} />,
+      (medplum) => {
+        vi.spyOn(medplum, 'readReference').mockReturnValue(
+          new ReadablePromise(Promise.resolve(referencedPatient)) as ReturnType<typeof medplum.readReference>
+        );
+      }
+    );
+    await waitFor(() => {
+      expect(screen.getByText('Ricardo Goncalves')).toBeDefined();
+    });
+  });
+
+  it('renders resource id', () => {
+    renderWithProviders(<ResourceDetail resource={testPatient} />);
+    expect(screen.getByText('ID')).toBeDefined();
+    expect(screen.getByText('test-1')).toBeDefined();
+  });
+
+  it('renders as a table', () => {
+    const { container } = renderWithProviders(<ResourceDetail resource={testPatient} />);
+    expect(container.querySelector('table')).not.toBeNull();
+    expect(container.querySelectorAll('tr').length).toBeGreaterThan(0);
+  });
+
+  it('renders labels for empty fields', () => {
+    const patientNoGender: Patient = {
+      resourceType: 'Patient',
+      id: 'test-2',
+      name: [{ family: 'Doe', given: ['Jane'] }],
+    };
+    renderWithProviders(<ResourceDetail resource={patientNoGender} />);
+    expect(screen.getByText('Gender')).toBeDefined();
+    expect(screen.getByText('Birth Date')).toBeDefined();
   });
 });

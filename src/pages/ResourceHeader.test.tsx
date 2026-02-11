@@ -5,13 +5,13 @@ import { MedplumProvider } from '@medplum/react-hooks';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, it } from 'vitest';
-import type { Organization, Patient } from '@medplum/fhirtypes';
+import type { Organization, Patient, RelatedPerson, Resource } from '@medplum/fhirtypes';
 import { HealthcareMedplumClient } from '../fhir/medplum-adapter';
 import { ResourceHeader } from './ResourceHeader';
 
 const medplum = new HealthcareMedplumClient({ getAccessToken: () => 'test' });
 
-function renderHeader(resource: Patient | Organization): ReturnType<typeof render> {
+function renderHeader(resource: Resource): ReturnType<typeof render> {
   return render(
     <MantineProvider>
       <MedplumProvider medplum={medplum}>
@@ -37,6 +37,27 @@ const testOrg: Organization = {
   name: 'Turn Health',
 };
 
+const testRelatedPerson: RelatedPerson = {
+  resourceType: 'RelatedPerson',
+  id: 'rp-1',
+  patient: { reference: 'Patient/patient-abc' },
+  relationship: [{ coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode', code: 'CHILD', display: 'child' }] }],
+};
+
+const testRelatedPersonWithIdentifier: RelatedPerson = {
+  resourceType: 'RelatedPerson',
+  id: 'rp-3',
+  patient: { reference: 'Patient/patient-abc' },
+  relationship: [{ coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode', code: 'CHILD', display: 'child' }] }],
+  identifier: [{ system: 'http://example.com/mrn', value: 'MRN-12345' }],
+};
+
+const testRelatedPersonNoRelationship: RelatedPerson = {
+  resourceType: 'RelatedPerson',
+  id: 'rp-2',
+  patient: { reference: 'Patient/patient-abc' },
+};
+
 describe('ResourceHeader', () => {
   it('renders display name for a patient', () => {
     renderHeader(testPatient);
@@ -57,5 +78,26 @@ describe('ResourceHeader', () => {
   it('renders display name for an organization', () => {
     renderHeader(testOrg);
     expect(screen.getByText('Turn Health')).toBeDefined();
+  });
+
+  it('renders relationship type for RelatedPerson', () => {
+    renderHeader(testRelatedPerson);
+    expect(screen.getByText('child')).toBeDefined();
+  });
+
+  it('renders RelatedPerson badge', () => {
+    renderHeader(testRelatedPerson);
+    expect(screen.getByText('RelatedPerson')).toBeDefined();
+  });
+
+  it('does not render relationship when RelatedPerson has none', () => {
+    renderHeader(testRelatedPersonNoRelationship);
+    expect(screen.getByText('RelatedPerson')).toBeDefined();
+  });
+
+  it('renders identifier system and value for RelatedPerson', () => {
+    renderHeader(testRelatedPersonWithIdentifier);
+    expect(screen.getByText('http://example.com/mrn')).toBeDefined();
+    expect(screen.getByText('MRN-12345')).toBeDefined();
   });
 });

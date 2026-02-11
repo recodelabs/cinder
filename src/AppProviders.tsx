@@ -21,15 +21,16 @@ interface FhirProviderProps {
 }
 
 export function FhirProvider({ storeConfig, children }: FhirProviderProps): JSX.Element {
-  const { accessToken } = useAuth();
+  const { accessToken, signOut } = useAuth();
   const navigate = useNavigate();
 
   const medplum = useMemo(() => {
     return new HealthcareMedplumClient({
       getAccessToken: () => accessToken,
       storeBaseUrl: storeConfig ? storeBaseUrl(storeConfig) : undefined,
+      onUnauthenticated: signOut,
     });
-  }, [accessToken, storeConfig]);
+  }, [accessToken, storeConfig, signOut]);
 
   return (
     <MedplumProvider medplum={medplum} navigate={navigate}>

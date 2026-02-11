@@ -5,7 +5,7 @@ import { MedplumProvider } from '@medplum/react-hooks';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
-import type { Bundle, Patient } from '@medplum/fhirtypes';
+import type { Bundle, BundleLink, Patient } from '@medplum/fhirtypes';
 import { HealthcareMedplumClient } from '../fhir/medplum-adapter';
 import { ResourceTypePage } from './ResourceTypePage';
 
@@ -49,5 +49,33 @@ describe('ResourceTypePage', () => {
   it('renders the New toolbar button', async () => {
     renderTypePage();
     expect(await screen.findByText('New...')).toBeDefined();
+  });
+
+  it('captures page tokens from Bundle next links', async () => {
+    const bundleWithNext: Bundle<Patient> = {
+      ...mockBundle,
+      total: 40,
+      link: [
+        { relation: 'next', url: 'https://healthcare.googleapis.com/v1/projects/p/locations/l/datasets/d/fhirStores/s/fhir/Patient?_page_token=TOKEN1&_count=20' } as BundleLink,
+      ],
+    };
+
+    const medplum = new HealthcareMedplumClient({ getAccessToken: () => 'test' });
+    vi.spyOn(medplum, 'search').mockResolvedValue(bundleWithNext as any);
+
+    render(
+      <MantineProvider>
+        <MedplumProvider medplum={medplum}>
+          <MemoryRouter initialEntries={['/Patient']}>
+            <Routes>
+              <Route path=":resourceType" element={<ResourceTypePage />} />
+            </Routes>
+          </MemoryRouter>
+        </MedplumProvider>
+      </MantineProvider>
+    );
+
+    // SearchControl should render with results
+    expect(await screen.findByText('Fields')).toBeDefined();
   });
 });

@@ -6,7 +6,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
-import type { Patient } from '@medplum/fhirtypes';
+import type { Bundle, Patient, RelatedPerson } from '@medplum/fhirtypes';
 import { HealthcareMedplumClient } from '../fhir/medplum-adapter';
 import { ResourceDetailPage } from './ResourceDetailPage';
 
@@ -107,5 +107,38 @@ describe('ResourceDetailPage', () => {
       expect(deleteBtn).toHaveProperty('disabled', true);
     });
     resolveDelete!();
+  });
+
+  it('shows relationships section on RelatedPerson detail page', async () => {
+    const testRP: RelatedPerson = {
+      resourceType: 'RelatedPerson',
+      id: 'rp-1',
+      patient: { reference: 'Patient/test-1' },
+      relationship: [{ coding: [{ code: 'PRN', display: 'Parent' }] }],
+      identifier: [{ system: 'http://example.org/fhir/related-person-patient', value: 'parent-123' }],
+    };
+    const linkedParent: Patient = {
+      resourceType: 'Patient',
+      id: 'parent-123',
+      name: [{ family: 'Berg', given: ['Matt'] }],
+    };
+    const rpBundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [{ resource: testRP }],
+      total: 1,
+    };
+
+    renderDetailPage('/RelatedPerson/rp-1', (medplum) => {
+      vi.spyOn(medplum, 'readResource').mockImplementation((type: string, id: string) => {
+        if (type === 'RelatedPerson' && id === 'rp-1') return Promise.resolve(testRP) as any;
+        if (type === 'Patient' && id === 'parent-123') return Promise.resolve(linkedParent) as any;
+        return Promise.reject(new Error('Not found'));
+      });
+      vi.spyOn(medplum, 'search').mockResolvedValue(rpBundle as any);
+    });
+
+    expect(await screen.findByText('Relationships')).toBeDefined();
+    expect(await screen.findByText('Matt Berg')).toBeDefined();
   });
 });

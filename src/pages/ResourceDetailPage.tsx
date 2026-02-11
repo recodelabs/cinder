@@ -1,13 +1,14 @@
 // ABOUTME: Fetches and displays a single FHIR resource with tabbed navigation.
 // ABOUTME: Tabs: Details (read-only view), Edit (form), JSON (raw editor).
 import { Alert, Button, Group, Loader, Stack, Tabs } from '@mantine/core';
-import type { Resource, ResourceType } from '@medplum/fhirtypes';
+import type { RelatedPerson, Resource, ResourceType } from '@medplum/fhirtypes';
 import { ResourceForm } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { safeErrorMessage } from '../errors';
+import { PatientRelationships } from './PatientRelationships';
 import { ResourceDetail } from './ResourceDetail';
 import { ResourceHeader } from './ResourceHeader';
 import { ResourceJsonTab } from './ResourceJsonTab';
@@ -91,8 +92,13 @@ export function ResourceDetailPage(): JSX.Element {
             </Group>
             <Tabs.Panel value="details" pt="md">
               <ResourceDetail resource={resource} />
+              {resourceType === 'Patient' && id && <PatientRelationships patientId={id} readonly />}
             </Tabs.Panel>
             <Tabs.Panel value="edit" pt="md">
+              {resourceType === 'Patient' && id && <PatientRelationships patientId={id} />}
+              {resourceType === 'RelatedPerson' && (resource as RelatedPerson).patient?.reference && (
+                <PatientRelationships patientId={(resource as RelatedPerson).patient!.reference!.replace('Patient/', '')} />
+              )}
               <ResourceForm defaultValue={resource} onSubmit={handleSubmit} />
             </Tabs.Panel>
             <Tabs.Panel value="json" pt="md">
