@@ -92,13 +92,13 @@ export function ResourceDetailPage(): JSX.Element {
             </Group>
             <Tabs.Panel value="details" pt="md">
               <ResourceDetail resource={resource} />
+            </Tabs.Panel>
+            <Tabs.Panel value="edit" pt="md">
+              <ResourceForm defaultValue={resource} onSubmit={handleSubmit} />
               {resourceType === 'Patient' && id && <PatientRelationships patientId={id} />}
               {resourceType === 'RelatedPerson' && (resource as RelatedPerson).patient?.reference && (
                 <PatientRelationships patientId={(resource as RelatedPerson).patient!.reference!.replace('Patient/', '')} />
               )}
-            </Tabs.Panel>
-            <Tabs.Panel value="edit" pt="md">
-              <ResourceForm defaultValue={resource} onSubmit={handleSubmit} />
             </Tabs.Panel>
             <Tabs.Panel value="json" pt="md">
               <ResourceJsonTab resource={resource} onSubmit={handleSubmit} />

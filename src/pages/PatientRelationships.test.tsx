@@ -1,13 +1,14 @@
 // ABOUTME: Tests for the PatientRelationships component.
-// ABOUTME: Verifies loading, empty, and populated states for RelatedPerson queries.
+// ABOUTME: Verifies relationship display, add form interactions, and bidirectional creation.
 import { MantineProvider } from '@mantine/core';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
 import type { Bundle, Patient, RelatedPerson } from '@medplum/fhirtypes';
 import { HealthcareMedplumClient } from '../fhir/medplum-adapter';
-import { PatientRelationships } from './PatientRelationships';
+import { createBidirectionalRelationship, PatientRelationships } from './PatientRelationships';
 
 const IDENTIFIER_SYSTEM = 'http://example.org/fhir/related-person-patient';
 
@@ -78,11 +79,11 @@ const bundleWithNoIdentifier: Bundle = {
 };
 
 describe('PatientRelationships', () => {
-  it('shows empty message when no relationships found', async () => {
+  it('shows add button when no relationships found', async () => {
     renderRelationships('pat-1', (medplum) => {
       vi.spyOn(medplum, 'search').mockResolvedValue(emptyBundle as any);
     });
-    expect(await screen.findByText('No relationships found')).toBeDefined();
+    expect(await screen.findByRole('button', { name: /add person/i })).toBeDefined();
   });
 
   it('resolves linked patient and shows their name', async () => {
@@ -114,7 +115,116 @@ describe('PatientRelationships', () => {
     const { medplum } = renderRelationships('pat-1', (medplum) => {
       vi.spyOn(medplum, 'search').mockResolvedValue(emptyBundle as any);
     });
-    await screen.findByText('No relationships found');
+    await screen.findByRole('button', { name: /add person/i });
     expect(medplum.search).toHaveBeenCalledWith('RelatedPerson', 'patient=pat-1');
+  });
+});
+
+const patientSearchBundle: Bundle = {
+  resourceType: 'Bundle',
+  type: 'searchset',
+  entry: [{ resource: { resourceType: 'Patient', id: 'target-456', name: [{ family: 'Doe', given: ['Jane'] }] } }],
+  total: 1,
+};
+
+describe('PatientRelationships add form', () => {
+  it('renders "Add Person" button', async () => {
+    renderRelationships('pat-1', (medplum) => {
+      vi.spyOn(medplum, 'search').mockResolvedValue(emptyBundle as any);
+    });
+    expect(await screen.findByRole('button', { name: /add person/i })).toBeDefined();
+  });
+
+  it('clicking button shows the form', async () => {
+    const user = userEvent.setup();
+    renderRelationships('pat-1', (medplum) => {
+      vi.spyOn(medplum, 'search').mockResolvedValue(emptyBundle as any);
+    });
+    const btn = await screen.findByRole('button', { name: /add person/i });
+    await user.click(btn);
+    expect(screen.getByRole('button', { name: /save/i })).toBeDefined();
+    expect(screen.getByRole('button', { name: /cancel/i })).toBeDefined();
+  });
+
+  it('cancelling hides the form', async () => {
+    const user = userEvent.setup();
+    renderRelationships('pat-1', (medplum) => {
+      vi.spyOn(medplum, 'search').mockResolvedValue(emptyBundle as any);
+    });
+    await user.click(await screen.findByRole('button', { name: /add person/i }));
+    await user.click(screen.getByRole('button', { name: /cancel/i }));
+    expect(screen.queryByRole('button', { name: /save/i })).toBeNull();
+  });
+
+  it('patient search calls medplum.search with name parameter', async () => {
+    const user = userEvent.setup();
+    const { medplum } = renderRelationships('pat-1', (medplum) => {
+      vi.spyOn(medplum, 'search').mockImplementation(async (type: string) => {
+        if (type === 'Patient') {
+          return patientSearchBundle as any;
+        }
+        return emptyBundle as any;
+      });
+    });
+    await user.click(await screen.findByRole('button', { name: /add person/i }));
+    const input = screen.getByRole('textbox', { name: /patient/i });
+    await user.type(input, 'Jane');
+    await waitFor(() => {
+      expect(medplum.search).toHaveBeenCalledWith('Patient', expect.objectContaining({ name: 'Jane', _count: '5' }));
+    });
+  });
+});
+
+describe('createBidirectionalRelationship', () => {
+  it('creates forward and inverse RelatedPerson resources for Parent of', async () => {
+    const createResource = vi.fn().mockImplementation(async (r: any) => r);
+    const client = { createResource };
+
+    await createBidirectionalRelationship(client, 'pat-1', 'target-456', 'CHILD');
+
+    expect(createResource).toHaveBeenCalledTimes(2);
+
+    const rp1 = createResource.mock.calls[0][0] as RelatedPerson;
+    const rp2 = createResource.mock.calls[1][0] as RelatedPerson;
+
+    // Forward: patient=pat-1, relationship=CHILD/"Parent of", identifier=target-456
+    expect(rp1.patient?.reference).toBe('Patient/pat-1');
+    expect(rp1.relationship?.[0]?.coding?.[0]?.code).toBe('CHILD');
+    expect(rp1.relationship?.[0]?.coding?.[0]?.display).toBe('Parent of');
+    expect(rp1.identifier?.[0]?.value).toBe('target-456');
+
+    // Inverse: patient=target-456, relationship=PRN/"Child of", identifier=pat-1
+    expect(rp2.patient?.reference).toBe('Patient/target-456');
+    expect(rp2.relationship?.[0]?.coding?.[0]?.code).toBe('PRN');
+    expect(rp2.relationship?.[0]?.coding?.[0]?.display).toBe('Child of');
+    expect(rp2.identifier?.[0]?.value).toBe('pat-1');
+  });
+
+  it('creates forward and inverse RelatedPerson resources for Child of', async () => {
+    const createResource = vi.fn().mockImplementation(async (r: any) => r);
+    const client = { createResource };
+
+    await createBidirectionalRelationship(client, 'pat-1', 'target-456', 'PRN');
+
+    const rp1 = createResource.mock.calls[0][0] as RelatedPerson;
+    const rp2 = createResource.mock.calls[1][0] as RelatedPerson;
+
+    expect(rp1.relationship?.[0]?.coding?.[0]?.code).toBe('PRN');
+    expect(rp1.relationship?.[0]?.coding?.[0]?.display).toBe('Child of');
+    expect(rp2.relationship?.[0]?.coding?.[0]?.code).toBe('CHILD');
+    expect(rp2.relationship?.[0]?.coding?.[0]?.display).toBe('Parent of');
+  });
+
+  it('throws for unknown relationship code', async () => {
+    const client = { createResource: vi.fn() };
+    await expect(createBidirectionalRelationship(client, 'a', 'b', 'UNKNOWN'))
+      .rejects.toThrow('Unknown relationship code: UNKNOWN');
+  });
+
+  it('propagates creation errors', async () => {
+    const createResource = vi.fn().mockRejectedValue(new Error('Server error'));
+    const client = { createResource };
+    await expect(createBidirectionalRelationship(client, 'a', 'b', 'CHILD'))
+      .rejects.toThrow('Server error');
   });
 });
