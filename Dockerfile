@@ -8,7 +8,8 @@ ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
 RUN bun run build
 
 FROM oven/bun:1
-RUN adduser --disabled-password --gecos "" cinder
+RUN echo "cinder:x:10001:10001::/app:/bin/sh" >> /etc/passwd && \
+    echo "cinder:x:10001:" >> /etc/group
 WORKDIR /app
 COPY --from=build --chown=cinder /app/dist ./dist
 COPY --from=build --chown=cinder /app/server.ts .
