@@ -2,7 +2,7 @@
 
 > **Issue:** REC-35 — Store FHIR Stores
 > **Date:** 2026-02-13
-> **Status:** Draft — Awaiting Feedback
+> **Status:** Approved
 
 ---
 
@@ -552,12 +552,12 @@ GOOGLE_CLIENT_SECRET=<oauth-client-secret>
 
 ---
 
-## Open Questions
+## Resolved Decisions
 
-1. **GCP token refresh** — Better Auth stores OAuth tokens, but GCP tokens expire in 1 hour. Should we implement automatic token refresh via the Google refresh token, or prompt users to re-authenticate?
-2. **Project-level permissions** — Should we add per-project role overrides beyond org-level roles? (e.g., a member with read-only access to some projects but read-write to others)
-3. **Audit logging** — Should we log who accessed which FHIR resources and when?
-4. **Service account support** — Some deployments may want to use a GCP service account instead of user OAuth tokens for FHIR API access. Should we support this as a project-level config option?
+1. **GCP token refresh** — Use auto-refresh via Google refresh tokens. Users stay logged in; the server silently refreshes expired GCP access tokens.
+2. **Project-level permissions** — Keep it simple. Permissions are inherited from org membership (owner/admin/member). No per-project role overrides.
+3. **Audit logging** — Deferred. Not in scope for this implementation.
+4. **Service account support** — Deferred. User OAuth tokens only for now.
 
 ---
 
