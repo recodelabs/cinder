@@ -10,9 +10,9 @@ export function SignInPage(): JSX.Element {
 
   return (
     <Center h="100vh">
-      <Stack align="center" gap="lg">
-        <Group gap="md">
-          <CinderLogo size={64} />
+      <Stack align="center" gap="sm">
+        <Group gap={10} wrap="nowrap">
+          <CinderLogo size={48} />
           <Title order={1}>Cinder</Title>
         </Group>
         <Text size="lg" c="dimmed">FHIR Browser</Text>
