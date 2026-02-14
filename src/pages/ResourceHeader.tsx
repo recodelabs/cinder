@@ -2,7 +2,9 @@
 // ABOUTME: Shows resource type, display name, and key fields like DOB and gender.
 import { Avatar, Badge, Group, Paper, Stack, Text } from '@mantine/core';
 import { getDisplayString } from '@medplum/core';
-import type { Patient, RelatedPerson, Resource } from '@medplum/fhirtypes';
+import type { Attachment, Binary, Patient, RelatedPerson, Resource } from '@medplum/fhirtypes';
+import { useMedplum } from '@medplum/react-hooks';
+import { useEffect, useState } from 'react';
 import type { JSX } from 'react';
 
 interface ResourceHeaderProps {
@@ -30,14 +32,67 @@ function getRelationshipDisplay(resource: RelatedPerson): string | undefined {
   return coding?.display ?? coding?.code;
 }
 
+function getPhotoAttachment(resource: Resource): Attachment | undefined {
+  if (!isPatient(resource)) return undefined;
+  return resource.photo?.find((p) => p.contentType?.startsWith('image/'));
+}
+
+function extractBinaryId(url: string): string | undefined {
+  const match = url.match(/Binary\/([^/?#]+)/);
+  return match?.[1];
+}
+
+function usePatientPhotoSrc(resource: Resource): string | undefined {
+  const medplum = useMedplum();
+  const [src, setSrc] = useState<string | undefined>();
+  const photo = getPhotoAttachment(resource);
+
+  useEffect(() => {
+    setSrc(undefined);
+
+    if (!photo) return;
+
+    // Inline base64 data
+    if (photo.data && photo.contentType) {
+      setSrc(`data:${photo.contentType};base64,${photo.data}`);
+      return;
+    }
+
+    // Binary URL reference — fetch via authenticated client
+    if (photo.url) {
+      const binaryId = extractBinaryId(photo.url);
+      if (!binaryId) return;
+
+      let cancelled = false;
+      medplum
+        .readResource('Binary', binaryId)
+        .then((binary: Binary) => {
+          if (cancelled) return;
+          if (binary.data && binary.contentType) {
+            setSrc(`data:${binary.contentType};base64,${binary.data}`);
+          }
+        })
+        .catch(() => {
+          // Silently fall back to initials
+        });
+      return () => {
+        cancelled = true;
+      };
+    }
+  }, [medplum, photo?.url, photo?.data, photo?.contentType]);
+
+  return src;
+}
+
 export function ResourceHeader({ resource }: ResourceHeaderProps): JSX.Element {
   const displayName = getDisplayString(resource);
   const initials = getInitials(displayName);
+  const photoSrc = usePatientPhotoSrc(resource);
 
   return (
     <Paper p="md" withBorder>
       <Group>
-        <Avatar size="lg" radius="xl" color="blue">
+        <Avatar size="lg" radius="xl" color="blue" src={photoSrc}>
           {initials}
         </Avatar>
         <Stack gap={2}>
