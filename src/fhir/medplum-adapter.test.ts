@@ -110,6 +110,42 @@ describe('HealthcareMedplumClient', () => {
     expect(onUnauthenticated).not.toHaveBeenCalled();
   });
 
+  it('createAttachment creates a Binary and returns Attachment with URL', async () => {
+    const client = new HealthcareMedplumClient({ getAccessToken: () => 'tok' });
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ resourceType: 'Binary', id: 'bin-456', contentType: 'image/jpeg' }),
+      status: 201,
+      headers: new Headers({ 'content-type': 'application/fhir+json' }),
+    });
+    const attachment = await client.createAttachment({
+      data: new Blob(['fake-image'], { type: 'image/jpeg' }),
+      contentType: 'image/jpeg',
+      filename: 'photo.jpg',
+    });
+    expect(attachment.contentType).toBe('image/jpeg');
+    expect(attachment.title).toBe('photo.jpg');
+    expect(attachment.url).toContain('/fhir/Binary/bin-456');
+  });
+
+  it('createAttachment works with deprecated positional args', async () => {
+    const client = new HealthcareMedplumClient({ getAccessToken: () => 'tok' });
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ resourceType: 'Binary', id: 'bin-789', contentType: 'image/png' }),
+      status: 201,
+      headers: new Headers({ 'content-type': 'application/fhir+json' }),
+    });
+    const attachment = await client.createAttachment(
+      new Blob(['fake-png'], { type: 'image/png' }),
+      'avatar.png',
+      'image/png'
+    );
+    expect(attachment.contentType).toBe('image/png');
+    expect(attachment.title).toBe('avatar.png');
+    expect(attachment.url).toContain('/fhir/Binary/bin-789');
+  });
+
   it('valueSetExpand falls back to server for unknown ValueSets', async () => {
     const client = new HealthcareMedplumClient({ getAccessToken: () => 'tok' });
     mockFetch.mockResolvedValue({
