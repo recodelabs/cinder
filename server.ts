@@ -1,6 +1,6 @@
 // ABOUTME: Bun production server for the Cinder SPA.
 // ABOUTME: Serves static files from dist/ with gzip compression, proxies /fhir/* using X-Store-Base header.
-import { existsSync } from 'fs';
+import { existsSync, statSync } from 'fs';
 import { gzipSync } from 'bun';
 import { extname, join, resolve } from 'path';
 
@@ -106,7 +106,7 @@ export function createServer(options: ServerOptions = {}) {
       // Static file serving with path traversal protection
       const resolvedDist = resolve(distDir);
       const filePath = resolve(distDir, '.' + url.pathname);
-      if (url.pathname !== '/' && filePath.startsWith(resolvedDist) && existsSync(filePath)) {
+      if (url.pathname !== '/' && filePath.startsWith(resolvedDist) && existsSync(filePath) && statSync(filePath).isFile()) {
         return withSecurityHeaders(await serveStaticFile(req, filePath));
       }
 

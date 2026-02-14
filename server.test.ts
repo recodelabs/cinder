@@ -67,6 +67,12 @@ describe('static file serving', () => {
     expect(res.status).toBe(200);
     expect(await res.text()).toBe('console.log("app")');
   });
+
+  it('falls back to index.html for directory paths', async () => {
+    const res = await fetch(`${baseUrl}/assets/`);
+    expect(res.status).toBe(200);
+    expect(await res.text()).toContain('SPA');
+  });
 });
 
 describe('compression', () => {
