@@ -5,15 +5,15 @@ import { describe, expect, it } from 'vitest';
 import { loadSchemas } from './schemas';
 
 describe('Schema loading', () => {
-  it('loads Patient StructureDefinition', () => {
-    loadSchemas();
+  it('loads Patient StructureDefinition', async () => {
+    await loadSchemas();
     const patient = getDataType('Patient');
     expect(patient).toBeDefined();
     expect(patient.elements).toBeDefined();
   });
 
-  it('loads Observation StructureDefinition', () => {
-    loadSchemas();
+  it('loads Observation StructureDefinition', async () => {
+    await loadSchemas();
     const obs = getDataType('Observation');
     expect(obs).toBeDefined();
   });

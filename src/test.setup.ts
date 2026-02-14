@@ -2,7 +2,7 @@
 // ABOUTME: Loads FHIR schemas and polyfills browser APIs missing from jsdom.
 import { loadSchemas } from './schemas';
 
-loadSchemas();
+await loadSchemas();
 
 global.ResizeObserver = class {
   observe(): void {}

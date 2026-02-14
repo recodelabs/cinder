@@ -1,7 +1,8 @@
 // ABOUTME: Bun production server for the Cinder SPA.
-// ABOUTME: Serves static files from dist/, proxies /fhir/* using X-Store-Base header.
+// ABOUTME: Serves static files from dist/ with gzip compression, proxies /fhir/* using X-Store-Base header.
 import { existsSync } from 'fs';
-import { join, resolve } from 'path';
+import { gzipSync } from 'bun';
+import { extname, join, resolve } from 'path';
 
 const HEALTHCARE_API_PATTERN =
   /^https:\/\/healthcare\.googleapis\.com\/v1\/projects\/[\w-]+\/locations\/[\w-]+\/datasets\/[\w-]+\/fhirStores\/[\w-]+$/;
@@ -24,6 +25,21 @@ const SECURITY_HEADERS: Record<string, string> = {
   'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
 };
 
+const COMPRESSIBLE_EXTENSIONS = new Set(['.js', '.css', '.html', '.json', '.svg', '.xml', '.txt']);
+
+const CONTENT_TYPES: Record<string, string> = {
+  '.html': 'text/html;charset=utf-8',
+  '.js': 'text/javascript;charset=utf-8',
+  '.css': 'text/css;charset=utf-8',
+  '.json': 'application/json;charset=utf-8',
+  '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+};
+
 function withSecurityHeaders(response: Response): Response {
   const headers = new Headers(response.headers);
   for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
@@ -34,6 +50,36 @@ function withSecurityHeaders(response: Response): Response {
     statusText: response.statusText,
     headers,
   });
+}
+
+function acceptsGzip(req: Request): boolean {
+  return (req.headers.get('Accept-Encoding') ?? '').includes('gzip');
+}
+
+function isHashedAsset(pathname: string): boolean {
+  return pathname.startsWith('/assets/');
+}
+
+async function serveStaticFile(req: Request, filePath: string): Promise<Response> {
+  const ext = extname(filePath);
+  const contentType = CONTENT_TYPES[ext];
+  const headers = new Headers();
+  if (contentType) {
+    headers.set('Content-Type', contentType);
+  }
+
+  if (isHashedAsset(new URL(req.url).pathname)) {
+    headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+  }
+
+  if (COMPRESSIBLE_EXTENSIONS.has(ext) && acceptsGzip(req)) {
+    const raw = await Bun.file(filePath).arrayBuffer();
+    const compressed = gzipSync(new Uint8Array(raw));
+    headers.set('Content-Encoding', 'gzip');
+    return new Response(compressed, { headers });
+  }
+
+  return new Response(Bun.file(filePath), { headers });
 }
 
 interface ServerOptions {
@@ -61,11 +107,11 @@ export function createServer(options: ServerOptions = {}) {
       const resolvedDist = resolve(distDir);
       const filePath = resolve(distDir, '.' + url.pathname);
       if (url.pathname !== '/' && filePath.startsWith(resolvedDist) && existsSync(filePath)) {
-        return withSecurityHeaders(new Response(Bun.file(filePath)));
+        return withSecurityHeaders(await serveStaticFile(req, filePath));
       }
 
       // SPA fallback
-      return withSecurityHeaders(new Response(Bun.file(join(distDir, 'index.html'))));
+      return withSecurityHeaders(await serveStaticFile(req, join(distDir, 'index.html')));
     },
   });
 }
