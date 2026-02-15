@@ -1,6 +1,7 @@
 // ABOUTME: Editable JSON view for a FHIR resource.
 // ABOUTME: Displays pretty-printed JSON with a save button.
-import { Alert, Button, Group, JsonInput, Stack } from '@mantine/core';
+import { Alert, Button, CopyButton, Group, JsonInput, Stack } from '@mantine/core';
+import { IconCheck, IconCopy } from '@tabler/icons-react';
 import { stringify } from '@medplum/core';
 import type { Resource } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
@@ -37,6 +38,18 @@ export function ResourceJsonTab({ resource, onSubmit }: ResourceJsonTabProps): J
         deserialize={JSON.parse}
       />
       <Group justify="flex-end">
+        <CopyButton value={value} timeout={2000}>
+          {({ copied, copy }) => (
+            <Button
+              variant="subtle"
+              color={copied ? 'teal' : 'gray'}
+              leftSection={copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
+              onClick={copy}
+            >
+              {copied ? 'Copied' : 'Copy'}
+            </Button>
+          )}
+        </CopyButton>
         <Button onClick={handleSubmit}>OK</Button>
       </Group>
     </Stack>
