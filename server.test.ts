@@ -67,6 +67,43 @@ describe('static file serving', () => {
     expect(res.status).toBe(200);
     expect(await res.text()).toBe('console.log("app")');
   });
+
+  it('falls back to index.html for directory paths', async () => {
+    const res = await fetch(`${baseUrl}/assets/`);
+    expect(res.status).toBe(200);
+    expect(await res.text()).toContain('SPA');
+  });
+});
+
+describe('compression', () => {
+  it('serves gzip when client accepts it', async () => {
+    const res = await fetch(`${baseUrl}/assets/app.js`, {
+      headers: { 'Accept-Encoding': 'gzip' },
+      // @ts-expect-error Bun fetch option to prevent auto-decompression
+      decompress: false,
+    });
+    expect(res.headers.get('Content-Encoding')).toBe('gzip');
+  });
+
+  it('serves uncompressed when client does not accept gzip', async () => {
+    const res = await fetch(`${baseUrl}/assets/app.js`, {
+      headers: { 'Accept-Encoding': 'identity' },
+    });
+    expect(res.headers.get('Content-Encoding')).toBeNull();
+    expect(await res.text()).toBe('console.log("app")');
+  });
+});
+
+describe('cache headers', () => {
+  it('sets immutable cache on hashed assets', async () => {
+    const res = await fetch(`${baseUrl}/assets/app.js`);
+    expect(res.headers.get('Cache-Control')).toBe('public, max-age=31536000, immutable');
+  });
+
+  it('does not set cache on index.html', async () => {
+    const res = await fetch(`${baseUrl}/`);
+    expect(res.headers.get('Cache-Control')).toBeNull();
+  });
 });
 
 describe('SPA fallback', () => {

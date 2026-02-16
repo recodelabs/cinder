@@ -1,6 +1,6 @@
 // ABOUTME: Form for selecting which GCP FHIR store to browse.
 // ABOUTME: Collects project, location, dataset, and store name.
-import { Button, Center, Stack, TextInput, Title, Text } from '@mantine/core';
+import { Button, Center, Group, Stack, TextInput, Title, Text } from '@mantine/core';
 import { useCallback, useState } from 'react';
 import type { JSX } from 'react';
 import { CinderLogo } from '../CinderLogo';
@@ -29,9 +29,11 @@ export function StoreSelector({ onSubmit }: StoreSelectorProps): JSX.Element {
   return (
     <Center h="100vh">
       <form onSubmit={handleSubmit}>
-        <Stack align="center" gap="lg" w={320}>
-          <CinderLogo size={48} />
-          <Title order={2}>Cinder</Title>
+        <Stack align="center" gap="sm" w={320}>
+          <Group gap={10} wrap="nowrap">
+            <CinderLogo size={36} />
+            <Title order={2}>Cinder</Title>
+          </Group>
           <Text size="sm" c="dimmed">Connect to a FHIR store</Text>
           <TextInput label="Project ID" value={project} onChange={(e) => setProject(e.currentTarget.value)} required w="100%" />
           <TextInput label="Location" value={location} onChange={(e) => setLocation(e.currentTarget.value)} required w="100%" />

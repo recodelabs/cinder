@@ -4,10 +4,23 @@ import { MantineProvider } from '@mantine/core';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { act, waitFor } from '@testing-library/react';
 import type { Organization, Patient, RelatedPerson, Resource } from '@medplum/fhirtypes';
 import { HealthcareMedplumClient } from '../fhir/medplum-adapter';
 import { ResourceHeader } from './ResourceHeader';
+
+let mockFetch: ReturnType<typeof vi.fn>;
+
+beforeEach(() => {
+  mockFetch = vi.fn().mockResolvedValue({
+    ok: true,
+    json: () => Promise.resolve({ resourceType: 'Patient', id: '123' }),
+    status: 200,
+    headers: new Headers({ 'content-type': 'application/fhir+json' }),
+  });
+  vi.stubGlobal('fetch', mockFetch);
+});
 
 const medplum = new HealthcareMedplumClient({ getAccessToken: () => 'test' });
 
@@ -99,5 +112,50 @@ describe('ResourceHeader', () => {
     renderHeader(testRelatedPersonWithIdentifier);
     expect(screen.getByText('http://example.com/mrn')).toBeDefined();
     expect(screen.getByText('MRN-12345')).toBeDefined();
+  });
+
+  it('displays inline base64 photo in avatar', async () => {
+    const patientWithInlinePhoto: Patient = {
+      ...testPatient,
+      photo: [{ contentType: 'image/png', data: 'iVBORw0KGgo=' }],
+    };
+    renderHeader(patientWithInlinePhoto);
+    await waitFor(() => {
+      const img = document.querySelector('img[src^="data:image/png;base64,"]');
+      expect(img).not.toBeNull();
+    });
+  });
+
+  it('fetches Binary and displays photo from URL reference', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          resourceType: 'Binary',
+          id: 'bin-photo',
+          contentType: 'image/jpeg',
+          data: '/9j/4AAQSkZJRg==',
+        }),
+      status: 200,
+      headers: new Headers({ 'content-type': 'application/fhir+json' }),
+    });
+    const patientWithBinaryPhoto: Patient = {
+      ...testPatient,
+      photo: [{ contentType: 'image/jpeg', url: 'http://localhost:5173/fhir/Binary/bin-photo' }],
+    };
+    await act(async () => {
+      renderHeader(patientWithBinaryPhoto);
+    });
+    await waitFor(() => {
+      const img = document.querySelector('img[src^="data:image/jpeg;base64,"]');
+      expect(img).not.toBeNull();
+    });
+  });
+
+  it('falls back to initials when patient has no photo', () => {
+    renderHeader(testPatient);
+    // No img tag with data URI should be present
+    const img = document.querySelector('img[src^="data:image/"]');
+    expect(img).toBeNull();
   });
 });

@@ -1,8 +1,8 @@
 // ABOUTME: MedplumClient subclass that routes FHIR operations through the proxy.
 // ABOUTME: Overrides schema and ValueSet methods for local-first operation.
-import { MedplumClient, ReadablePromise } from '@medplum/core';
-import type { ValueSetExpandParams } from '@medplum/core';
-import type { ValueSet } from '@medplum/fhirtypes';
+import { MedplumClient, ReadablePromise, normalizeCreateBinaryOptions } from '@medplum/core';
+import type { BinarySource, CreateBinaryOptions, MedplumRequestOptions, ValueSetExpandParams } from '@medplum/core';
+import type { Attachment, ValueSet } from '@medplum/fhirtypes';
 import { loadSchemas } from '../schemas';
 import { expandValueSet } from './valuesets';
 
@@ -45,6 +45,30 @@ export class HealthcareMedplumClient extends MedplumClient {
 
   override async requestProfileSchema(): Promise<void> {
     await loadSchemas();
+  }
+
+  override createAttachment(options: CreateBinaryOptions, requestOptions?: MedplumRequestOptions): Promise<Attachment>;
+  override createAttachment(
+    data: BinarySource,
+    filename: string | undefined,
+    contentType: string,
+    onProgress?: (e: ProgressEvent) => void,
+    options?: MedplumRequestOptions
+  ): Promise<Attachment>;
+  override async createAttachment(
+    arg1: BinarySource | CreateBinaryOptions,
+    arg2?: string | undefined | MedplumRequestOptions,
+    arg3?: string,
+    arg4?: (e: ProgressEvent) => void
+  ): Promise<Attachment> {
+    const options = normalizeCreateBinaryOptions(arg1, arg2, arg3, arg4);
+    const reqOpts = typeof arg2 === 'object' && arg2 !== null && !('contentType' in (arg2 as CreateBinaryOptions)) ? arg2 as MedplumRequestOptions : undefined;
+    const binary = await this.createBinary(options, reqOpts);
+    return {
+      contentType: options.contentType,
+      url: this.fhirUrl('Binary', binary.id).toString(),
+      title: options.filename,
+    };
   }
 
   override valueSetExpand(params: ValueSetExpandParams): ReadablePromise<ValueSet> {
