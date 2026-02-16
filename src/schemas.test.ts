@@ -1,4 +1,4 @@
-// ABOUTME: Tests that FHIR schemas load correctly at startup.
+// ABOUTME: Tests that FHIR schemas load correctly via async dynamic imports.
 // ABOUTME: Verifies StructureDefinitions and SearchParameters are indexed.
 import { getDataType } from '@medplum/core';
 import { describe, expect, it } from 'vitest';

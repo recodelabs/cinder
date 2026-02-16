@@ -4,13 +4,13 @@ import { describe, expect, it, beforeAll } from 'vitest';
 import { expandValueSet } from './valuesets';
 import { loadSchemas } from '../schemas';
 
-beforeAll(() => {
-  loadSchemas();
+beforeAll(async () => {
+  await loadSchemas();
 });
 
 describe('expandValueSet', () => {
-  it('expands administrative-gender', () => {
-    const result = expandValueSet('http://hl7.org/fhir/ValueSet/administrative-gender');
+  it('expands administrative-gender', async () => {
+    const result = await expandValueSet('http://hl7.org/fhir/ValueSet/administrative-gender');
     expect(result).toBeDefined();
     expect(result!.resourceType).toBe('ValueSet');
     expect(result!.expansion?.contains).toBeDefined();
@@ -21,16 +21,16 @@ describe('expandValueSet', () => {
     expect(codes).toContain('unknown');
   });
 
-  it('expands contact-point-system', () => {
-    const result = expandValueSet('http://hl7.org/fhir/ValueSet/contact-point-system');
+  it('expands contact-point-system', async () => {
+    const result = await expandValueSet('http://hl7.org/fhir/ValueSet/contact-point-system');
     expect(result).toBeDefined();
     const codes = result!.expansion!.contains!.map((c) => c.code);
     expect(codes).toContain('phone');
     expect(codes).toContain('email');
   });
 
-  it('expands marital-status from v3 codesystem', () => {
-    const result = expandValueSet('http://hl7.org/fhir/ValueSet/marital-status');
+  it('expands marital-status from v3 codesystem', async () => {
+    const result = await expandValueSet('http://hl7.org/fhir/ValueSet/marital-status');
     expect(result).toBeDefined();
     const codes = result!.expansion!.contains!.map((c) => c.code);
     expect(codes).toContain('M');
@@ -38,16 +38,16 @@ describe('expandValueSet', () => {
     expect(codes).toContain('D');
   });
 
-  it('filters by text when filter is provided', () => {
-    const result = expandValueSet('http://hl7.org/fhir/ValueSet/administrative-gender', 'fem');
+  it('filters by text when filter is provided', async () => {
+    const result = await expandValueSet('http://hl7.org/fhir/ValueSet/administrative-gender', 'fem');
     expect(result).toBeDefined();
     const codes = result!.expansion!.contains!.map((c) => c.code);
     expect(codes).toContain('female');
     expect(codes).not.toContain('male');
   });
 
-  it('expands versioned ValueSet URL by stripping version suffix', () => {
-    const result = expandValueSet('http://hl7.org/fhir/ValueSet/link-type|4.0.1');
+  it('expands versioned ValueSet URL by stripping version suffix', async () => {
+    const result = await expandValueSet('http://hl7.org/fhir/ValueSet/link-type|4.0.1');
     expect(result).toBeDefined();
     const codes = result!.expansion!.contains!.map((c) => c.code);
     expect(codes).toContain('replaced-by');
@@ -56,8 +56,8 @@ describe('expandValueSet', () => {
     expect(codes).toContain('seealso');
   });
 
-  it('returns undefined for unknown ValueSet', () => {
-    const result = expandValueSet('http://example.com/unknown');
+  it('returns undefined for unknown ValueSet', async () => {
+    const result = await expandValueSet('http://example.com/unknown');
     expect(result).toBeUndefined();
   });
 });

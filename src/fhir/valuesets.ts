@@ -1,20 +1,22 @@
 // ABOUTME: Local ValueSet expansion using bundled FHIR R4 definitions.
 // ABOUTME: Resolves ValueSet compose.include against CodeSystem concepts without a server.
 import type { Bundle, CodeSystem, ValueSet, ValueSetExpansionContains } from '@medplum/fhirtypes';
-import valueSetsBundle from 'fhir-definitions/r4/valuesets.json';
-import v3CodeSystemsBundle from 'fhir-definitions/r4/v3-codesystems.json';
-import v2TablesBundle from 'fhir-definitions/r4/v2-tables.json';
 
 const codeSystemIndex = new Map<string, CodeSystem>();
 const valueSetIndex = new Map<string, ValueSet>();
 
 let indexed = false;
 
-function ensureIndexed(): void {
+async function ensureIndexed(): Promise<void> {
   if (indexed) {
     return;
   }
-  for (const bundle of [valueSetsBundle, v3CodeSystemsBundle, v2TablesBundle] as unknown as Bundle[]) {
+  const [valueSetsBundle, v3CodeSystemsBundle, v2TablesBundle] = await Promise.all([
+    import('fhir-definitions/r4/valuesets.json'),
+    import('fhir-definitions/r4/v3-codesystems.json'),
+    import('fhir-definitions/r4/v2-tables.json'),
+  ]);
+  for (const bundle of [valueSetsBundle.default, v3CodeSystemsBundle.default, v2TablesBundle.default] as unknown as Bundle[]) {
     for (const entry of bundle.entry ?? []) {
       const resource = entry.resource as (CodeSystem | ValueSet) | undefined;
       if (!resource?.url) {
@@ -43,8 +45,8 @@ function collectConcepts(cs: CodeSystem, concepts: CodeSystem['concept'], result
   }
 }
 
-export function expandValueSet(url: string, filter?: string): ValueSet | undefined {
-  ensureIndexed();
+export async function expandValueSet(url: string, filter?: string): Promise<ValueSet | undefined> {
+  await ensureIndexed();
   const bareUrl = url.split('|')[0] ?? url;
   const vs = valueSetIndex.get(bareUrl);
   if (!vs) {
