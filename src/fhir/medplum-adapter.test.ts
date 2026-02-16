@@ -22,9 +22,10 @@ describe('HealthcareMedplumClient', () => {
     expect(url.pathname).toBe('/fhir/Patient/123');
   });
 
-  it('requestSchema is a no-op', async () => {
+  it('requestSchema loads schemas without network calls', async () => {
     const client = new HealthcareMedplumClient({ getAccessToken: () => 'tok' });
     await client.requestSchema('Patient');
+    // Should load schemas via dynamic import, not via fetch
     expect(mockFetch).not.toHaveBeenCalled();
   });
 

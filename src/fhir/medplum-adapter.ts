@@ -3,6 +3,7 @@
 import { MedplumClient, ReadablePromise } from '@medplum/core';
 import type { ValueSetExpandParams } from '@medplum/core';
 import type { ValueSet } from '@medplum/fhirtypes';
+import { loadSchemas } from '../schemas';
 import { expandValueSet } from './valuesets';
 
 export interface HealthcareMedplumClientConfig {
@@ -39,21 +40,22 @@ export class HealthcareMedplumClient extends MedplumClient {
   }
 
   override async requestSchema(): Promise<void> {
-    // Schemas are pre-loaded from @medplum/definitions at startup
-    return;
+    await loadSchemas();
   }
 
   override async requestProfileSchema(): Promise<void> {
-    // Profiles are pre-loaded from @medplum/definitions at startup
-    return;
+    await loadSchemas();
   }
 
   override valueSetExpand(params: ValueSetExpandParams): ReadablePromise<ValueSet> {
-    const result = expandValueSet(params.url ?? '', params.filter);
-    if (result) {
-      return new ReadablePromise(Promise.resolve(result));
-    }
-    // Fall back to server-side expansion via proxy
-    return super.valueSetExpand(params);
+    const promise = (async () => {
+      const result = await expandValueSet(params.url ?? '', params.filter);
+      if (result) {
+        return result;
+      }
+      // Fall back to server-side expansion via proxy
+      return await super.valueSetExpand(params);
+    })();
+    return new ReadablePromise(promise);
   }
 }

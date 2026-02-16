@@ -11,9 +11,6 @@ import { AuthProvider, useAuth } from './auth/AuthProvider';
 import type { StoreConfig } from './config/StoreConfig';
 import { storeBaseUrl } from './config/StoreConfig';
 import { HealthcareMedplumClient } from './fhir/medplum-adapter';
-import { loadSchemas } from './schemas';
-
-loadSchemas();
 
 interface FhirProviderProps {
   readonly storeConfig?: StoreConfig;
