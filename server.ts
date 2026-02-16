@@ -143,9 +143,15 @@ async function handleFhirProxy(req: Request, url: URL, validateStore: (url: stri
     body: req.body,
   });
 
+  const responseHeaders = new Headers(upstream.headers);
+  // Bun's fetch auto-decompresses gzip responses but keeps the original headers.
+  // Strip encoding headers so the browser doesn't try to decompress again.
+  responseHeaders.delete('Content-Encoding');
+  responseHeaders.delete('Content-Length');
+
   return new Response(upstream.body, {
     status: upstream.status,
-    headers: upstream.headers,
+    headers: responseHeaders,
   });
 }
 
