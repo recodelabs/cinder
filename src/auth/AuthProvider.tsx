@@ -2,6 +2,7 @@
 // ABOUTME: Exposes sign-in/sign-out and access token to child components.
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 import type { JSX } from 'react';
+import { clearStoreConfig } from '../config/StoreConfig';
 import { TokenStore, type TokenResponse } from './google-auth';
 
 interface AuthContextValue {
@@ -51,6 +52,7 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
       google?.accounts?.oauth2?.revoke?.(token);
     }
     tokenStore.clear();
+    clearStoreConfig();
     setAuthenticated(false);
   }, []);
 

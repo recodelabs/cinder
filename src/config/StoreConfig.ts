@@ -24,6 +24,10 @@ export function saveStoreConfig(config: StoreConfig): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
 }
 
+export function clearStoreConfig(): void {
+  localStorage.removeItem(STORAGE_KEY);
+}
+
 export function storeBaseUrl(config: StoreConfig): string {
   return `https://healthcare.googleapis.com/v1/projects/${config.project}/locations/${config.location}/datasets/${config.dataset}/fhirStores/${config.fhirStore}`;
 }

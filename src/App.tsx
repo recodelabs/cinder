@@ -7,7 +7,7 @@ import { Route, Routes } from 'react-router';
 import { AppProviders, FhirProvider } from './AppProviders';
 import { useAuth } from './auth/AuthProvider';
 import type { StoreConfig } from './config/StoreConfig';
-import { loadStoreConfig, saveStoreConfig } from './config/StoreConfig';
+import { clearStoreConfig, loadStoreConfig, saveStoreConfig } from './config/StoreConfig';
 import { StoreSelector } from './config/StoreSelector';
 import { Shell } from './Shell';
 import { HomePage } from './pages/HomePage';
@@ -34,6 +34,7 @@ function AppContent(): JSX.Element {
   }, []);
 
   const handleChangeStore = useCallback(() => {
+    clearStoreConfig();
     setStoreConfig(undefined);
   }, []);
 

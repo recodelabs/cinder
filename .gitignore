@@ -5,3 +5,4 @@ dist/
 .env
 .env.local
 service-account.json
+screens/

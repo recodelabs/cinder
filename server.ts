@@ -15,7 +15,7 @@ const SECURITY_HEADERS: Record<string, string> = {
   'Content-Security-Policy': [
     "default-src 'self'",
     "script-src 'self' https://accounts.google.com",
-    "connect-src 'self' https://healthcare.googleapis.com https://tx.fhir.org",
+    "connect-src 'self' https://healthcare.googleapis.com https://tx.fhir.org https://oauth2.googleapis.com https://accounts.google.com",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data:",
     "frame-ancestors 'none'",
