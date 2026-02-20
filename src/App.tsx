@@ -14,6 +14,7 @@ import { HomePage } from './pages/HomePage';
 import { ResourceTypePage } from './pages/ResourceTypePage';
 import { ResourceDetailPage } from './pages/ResourceDetailPage';
 import { ResourceCreateRoutePage } from './pages/ResourceCreateRoutePage';
+import { BulkLoadPage } from './pages/BulkLoadPage';
 import { SignInPage } from './pages/SignInPage';
 import { loadSchemas } from './schemas';
 
@@ -55,6 +56,7 @@ function AppContent(): JSX.Element {
       <Routes>
         <Route element={<Shell onChangeStore={isDevProxy ? undefined : handleChangeStore} />}>
           <Route index element={<HomePage />} />
+          <Route path="bulk-load" element={<BulkLoadPage />} />
           <Route path=":resourceType" element={<ResourceTypePage />} />
           <Route path=":resourceType/new" element={<ResourceCreateRoutePage />} />
           <Route path=":resourceType/:id" element={<ResourceDetailPage />} />
