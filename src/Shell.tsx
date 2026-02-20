@@ -1,12 +1,12 @@
 // ABOUTME: Application shell with sidebar navigation, header search, and route outlet.
 // ABOUTME: Provides the main layout: header with search, filterable sidebar, content area.
-import { Anchor, AppShell, Button, Group, Kbd, NavLink, Stack, Text, TextInput, Title } from '@mantine/core';
+import { Anchor, AppShell, Button, Collapse, Group, Kbd, NavLink, Stack, Text, TextInput, Title } from '@mantine/core';
 import { useDebouncedCallback } from '@mantine/hooks';
 import { getDisplayString } from '@medplum/core';
 import type { Bundle, Resource, ResourceType } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { Spotlight, spotlight } from '@mantine/spotlight';
-import { IconFilter, IconSearch } from '@tabler/icons-react';
+import { IconChevronDown, IconFilter, IconList, IconSearch, IconSettings, IconUpload } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router';
@@ -26,6 +26,8 @@ export function Shell({ onChangeStore }: ShellProps = {}): JSX.Element {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Resource[]>([]);
   const [sidebarFilter, setSidebarFilter] = useState('');
+  const [resourcesOpen, setResourcesOpen] = useState(true);
+  const [adminOpen, setAdminOpen] = useState(false);
 
   const activeResourceType = location.pathname.split('/')[1] || '';
 
@@ -111,23 +113,46 @@ export function Shell({ onChangeStore }: ShellProps = {}): JSX.Element {
       </Spotlight.Root>
 
       <AppShell.Navbar p="xs">
-        <TextInput
-          placeholder="Filter..."
-          leftSection={<IconFilter size={14} />}
-          size="xs"
-          mb="xs"
-          value={sidebarFilter}
-          onChange={(e) => setSidebarFilter(e.currentTarget.value)}
+        <NavLink
+          label="Resources"
+          leftSection={<IconList size={16} />}
+          rightSection={<IconChevronDown size={14} style={{ transform: resourcesOpen ? undefined : 'rotate(-90deg)', transition: 'transform 200ms' }} />}
+          onClick={() => setResourcesOpen((o) => !o)}
         />
-        {filteredTypes.map((type) => (
-          <NavLink
-            key={type}
-            component={Link}
-            to={`/${type}`}
-            label={type}
-            active={activeResourceType === type}
+        <Collapse in={resourcesOpen}>
+          <TextInput
+            placeholder="Filter..."
+            leftSection={<IconFilter size={14} />}
+            size="xs"
+            my="xs"
+            value={sidebarFilter}
+            onChange={(e) => setSidebarFilter(e.currentTarget.value)}
           />
-        ))}
+          {filteredTypes.map((type) => (
+            <NavLink
+              key={type}
+              component={Link}
+              to={`/${type}`}
+              label={type}
+              active={activeResourceType === type}
+            />
+          ))}
+        </Collapse>
+        <NavLink
+          label="Admin"
+          leftSection={<IconSettings size={16} />}
+          rightSection={<IconChevronDown size={14} style={{ transform: adminOpen ? undefined : 'rotate(-90deg)', transition: 'transform 200ms' }} />}
+          onClick={() => setAdminOpen((o) => !o)}
+        />
+        <Collapse in={adminOpen}>
+          <NavLink
+            component={Link}
+            to="/bulk-load"
+            label="Bulk Load"
+            leftSection={<IconUpload size={16} />}
+            active={activeResourceType === 'bulk-load'}
+          />
+        </Collapse>
       </AppShell.Navbar>
 
       <AppShell.Main>
