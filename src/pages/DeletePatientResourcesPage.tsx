@@ -139,18 +139,26 @@ export function DeletePatientResourcesPage(): JSX.Element {
             const bundle: Bundle = await medplum.search(type as ResourceType, {
               [param]: `Patient/${selectedPatient.id}`,
               _summary: 'count',
+              _total: 'accurate',
             });
             return { type, count: bundle.total ?? 0 };
           })
         );
 
         const newCounts: Record<string, number> = {};
-        for (const result of results) {
+        const errors: string[] = [];
+        for (let i = 0; i < results.length; i++) {
+          const result = results[i]!;
           if (result.status === 'fulfilled') {
             newCounts[result.value.type] = result.value.count;
           } else {
-            newCounts['unknown'] = 0;
+            const typeName = PATIENT_RESOURCE_TYPES[i]!.type;
+            newCounts[typeName] = 0;
+            errors.push(`${typeName}: ${toErrorMessage(result.reason)}`);
           }
+        }
+        if (errors.length > 0 && Object.values(newCounts).every((c) => c === 0)) {
+          throw new Error(`Failed to load counts: ${errors[0]}`);
         }
         setCounts(newCounts);
         setSelectedTypes(new Set());
