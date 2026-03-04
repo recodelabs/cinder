@@ -138,7 +138,7 @@ export function DeletePatientResourcesPage(): JSX.Element {
           PATIENT_RESOURCE_TYPES.map(async ({ type, param }) => {
             const bundle: Bundle = await medplum.search(type as ResourceType, {
               [param]: `Patient/${selectedPatient.id}`,
-              _summary: 'count',
+              _count: '0',
               _total: 'accurate',
             });
             return { type, count: bundle.total ?? 0 };
