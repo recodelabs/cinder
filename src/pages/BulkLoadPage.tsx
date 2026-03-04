@@ -1,4 +1,4 @@
-// ABOUTME: Bulk load page for uploading ZIP files of FHIR bundles into a store.
+// ABOUTME: Bulk load page for uploading FHIR bundles from ZIP or JSON files into a store.
 // ABOUTME: Multi-step flow: file upload, preview with patient picker, upload progress, results.
 import {
   Alert,
@@ -90,7 +90,7 @@ export function BulkLoadPage(): JSX.Element {
     setParsing(true);
     setParseError(undefined);
     try {
-      const data = await parseZipFile(file);
+      const data = await parseFile(file);
       setParsed(data);
       setStep('preview');
     } catch (err: unknown) {
@@ -147,12 +147,16 @@ export function BulkLoadPage(): JSX.Element {
       (r) => r.resourceType !== 'Patient'
     );
 
+    // Track urn:uuid -> server-assigned reference so we can rewrite cross-references
+    const urnMap = new Map<string, string>();
+
     const results: UploadResult[] = [];
     for (let i = 0; i < nonPatientResources.length; i++) {
       if (cancelRef.current) break;
       setUploadIndex(i + 1);
 
       const original = nonPatientResources[i]!;
+      const fullUrl = parsed.fullUrls.get(original);
 
       // Strip id and meta so the server assigns new ones
       const cleaned = JSON.parse(JSON.stringify(original)) as Record<string, unknown>;
@@ -169,10 +173,17 @@ export function BulkLoadPage(): JSX.Element {
         );
       }
 
+      // Rewrite urn:uuid references to server-assigned IDs
+      toCreate = rewriteUrnReferences(toCreate, urnMap);
+
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await medplum.createResource(toCreate as any);
+        const created = await medplum.createResource(toCreate as any);
         results.push({ resourceType: original.resourceType, success: true });
+        // Record the mapping from urn:uuid to the new server-assigned reference
+        if (fullUrl && created.id) {
+          urnMap.set(fullUrl, `${created.resourceType}/${created.id}`);
+        }
       } catch (err: unknown) {
         results.push({
           resourceType: original.resourceType,
@@ -201,14 +212,14 @@ export function BulkLoadPage(): JSX.Element {
         <Card withBorder>
           <Stack>
             <Text>
-              Upload a ZIP file containing FHIR Bundle JSON files (e.g., from
-              Kindling). Each bundle&apos;s resources will be extracted and loaded
-              into the current FHIR store.
+              Upload a FHIR Bundle JSON file or a ZIP file containing FHIR
+              Bundle JSON files (e.g., from Kindling). Each bundle&apos;s
+              resources will be extracted and loaded into the current FHIR store.
             </Text>
             <FileInput
-              label="ZIP file"
-              placeholder="Select a .zip file"
-              accept=".zip"
+              label="FHIR file"
+              placeholder="Select a .json or .zip file"
+              accept=".json,.zip"
               value={file}
               onChange={handleFileChange}
             />
@@ -218,7 +229,7 @@ export function BulkLoadPage(): JSX.Element {
               disabled={!file}
               loading={parsing}
             >
-              Parse ZIP
+              Parse File
             </Button>
           </Stack>
         </Card>
@@ -409,6 +420,82 @@ export function BulkLoadPage(): JSX.Element {
   );
 }
 
+async function parseFile(file: File): Promise<ParsedData> {
+  if (file.name.endsWith('.zip') || file.type === 'application/zip') {
+    return parseZipFile(file);
+  }
+  return parseJsonFile(file);
+}
+
+function collectResources(
+  parsed: unknown,
+  resources: Resource[],
+  fullUrls: Map<Resource, string>
+): void {
+  if (!parsed || typeof parsed !== 'object' || !('resourceType' in parsed)) {
+    return;
+  }
+
+  const obj = parsed as { resourceType: string };
+
+  if (obj.resourceType === 'Bundle') {
+    const bundle = parsed as Bundle;
+    for (const bundleEntry of bundle.entry ?? []) {
+      if (bundleEntry.resource) {
+        resources.push(bundleEntry.resource);
+        if (bundleEntry.fullUrl) {
+          fullUrls.set(bundleEntry.resource, bundleEntry.fullUrl);
+        }
+      }
+    }
+  } else {
+    resources.push(parsed as Resource);
+  }
+}
+
+function buildParsedData(
+  resources: Resource[],
+  fullUrls: Map<Resource, string>,
+  errorLabel: string
+): ParsedData {
+  if (resources.length === 0) {
+    throw new Error(`No FHIR resources found in the ${errorLabel}`);
+  }
+
+  const sourcePatientIds = extractPatientIds(resources, fullUrls);
+
+  const counts: Record<string, number> = {};
+  for (const r of resources) {
+    counts[r.resourceType] = (counts[r.resourceType] ?? 0) + 1;
+  }
+
+  return { resources, fullUrls, sourcePatientIds, counts };
+}
+
+function readFileAsText(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.readAsText(file);
+  });
+}
+
+async function parseJsonFile(file: File): Promise<ParsedData> {
+  const text = await readFileAsText(file);
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    throw new Error('File is not valid JSON');
+  }
+
+  const resources: Resource[] = [];
+  const fullUrls = new Map<Resource, string>();
+  collectResources(parsed, resources, fullUrls);
+  return buildParsedData(resources, fullUrls, 'JSON file');
+}
+
 async function parseZipFile(file: File): Promise<ParsedData> {
   const zip = await JSZip.loadAsync(file);
   const resources: Resource[] = [];
@@ -427,37 +514,22 @@ async function parseZipFile(file: File): Promise<ParsedData> {
       continue; // Skip non-JSON files
     }
 
-    if (!parsed || typeof parsed !== 'object' || !('resourceType' in parsed)) {
-      continue;
-    }
-
-    const obj = parsed as { resourceType: string };
-
-    if (obj.resourceType === 'Bundle') {
-      const bundle = parsed as Bundle;
-      for (const bundleEntry of bundle.entry ?? []) {
-        if (bundleEntry.resource) {
-          resources.push(bundleEntry.resource);
-          if (bundleEntry.fullUrl) {
-            fullUrls.set(bundleEntry.resource, bundleEntry.fullUrl);
-          }
-        }
-      }
-    } else {
-      resources.push(parsed as Resource);
-    }
+    collectResources(parsed, resources, fullUrls);
   }
 
-  if (resources.length === 0) {
-    throw new Error('No FHIR resources found in the ZIP file');
-  }
+  return buildParsedData(resources, fullUrls, 'ZIP file');
+}
 
-  const sourcePatientIds = extractPatientIds(resources, fullUrls);
-
-  const counts: Record<string, number> = {};
-  for (const r of resources) {
-    counts[r.resourceType] = (counts[r.resourceType] ?? 0) + 1;
-  }
-
-  return { resources, fullUrls, sourcePatientIds, counts };
+/** Recursively rewrite urn:uuid: references to server-assigned references. */
+function rewriteUrnReferences(
+  resource: Resource,
+  urnMap: Map<string, string>
+): Resource {
+  if (urnMap.size === 0) return resource;
+  const json = JSON.stringify(resource);
+  const rewritten = json.replace(
+    /urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g,
+    (match) => urnMap.get(match) ?? match
+  );
+  return JSON.parse(rewritten) as Resource;
 }

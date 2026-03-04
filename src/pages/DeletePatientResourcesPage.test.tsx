@@ -57,7 +57,7 @@ describe('DeletePatientResourcesPage', () => {
             } as Bundle);
           }
           // Count queries
-          if (params?._summary === 'count') {
+          if (params?._count === '0') {
             if (type === 'Observation') {
               return Promise.resolve({
                 resourceType: 'Bundle',
@@ -126,7 +126,7 @@ describe('DeletePatientResourcesPage', () => {
             } as Bundle);
           }
           // Count queries
-          if (params?._summary === 'count') {
+          if (params?._count === '0') {
             if (type === 'Observation') {
               return Promise.resolve({
                 resourceType: 'Bundle',
