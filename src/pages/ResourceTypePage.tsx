@@ -5,10 +5,12 @@ import type { SearchRequest } from '@medplum/core';
 import type { ResourceType } from '@medplum/fhirtypes';
 import type { SearchChangeEvent, SearchLoadEvent } from '@medplum/react';
 import { SearchControl } from '@medplum/react';
+import { Stack } from '@mantine/core';
 import type { JSX } from 'react';
 import { useCallback, useMemo, useRef } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
 import { getDefaultSearch } from './search-defaults';
+import { SearchFilterBar } from './SearchFilterBar';
 
 function getPageNumber(search: SearchRequest): number {
   return Math.floor((search.offset ?? 0) / (search.count ?? 20)) + 1;
@@ -82,12 +84,15 @@ export function ResourceTypePage(): JSX.Element {
   );
 
   return (
-    <SearchControl
-      search={search}
-      onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
-      onChange={handleChange}
-      onLoad={handleLoad}
-      onNew={() => navigate(`/${resourceType}/new`)}
-    />
+    <Stack gap={0}>
+      <SearchFilterBar resourceType={resourceType ?? ''} />
+      <SearchControl
+        search={search}
+        onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
+        onChange={handleChange}
+        onLoad={handleLoad}
+        onNew={() => navigate(`/${resourceType}/new`)}
+      />
+    </Stack>
   );
 }
