@@ -6,7 +6,7 @@ import { getDisplayString } from '@medplum/core';
 import type { Bundle, Resource, ResourceType } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { Spotlight, spotlight } from '@mantine/spotlight';
-import { IconChevronDown, IconFilter, IconList, IconSearch, IconSettings, IconUpload } from '@tabler/icons-react';
+import { IconChevronDown, IconFilter, IconList, IconSearch, IconSettings, IconTrash, IconUpload } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router';
@@ -151,6 +151,13 @@ export function Shell({ onChangeStore }: ShellProps = {}): JSX.Element {
             label="Bulk Load"
             leftSection={<IconUpload size={16} />}
             active={activeResourceType === 'bulk-load'}
+          />
+          <NavLink
+            component={Link}
+            to="/delete-patient-resources"
+            label="Delete Patient Resources"
+            leftSection={<IconTrash size={16} />}
+            active={activeResourceType === 'delete-patient-resources'}
           />
         </Collapse>
       </AppShell.Navbar>
