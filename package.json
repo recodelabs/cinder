@@ -22,6 +22,7 @@
     "@medplum/react": "^5.0.14",
     "@medplum/react-hooks": "^5.0.14",
     "@tabler/icons-react": "^3.36.1",
+    "jszip": "^3.10.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-router": "^7.13.0",
