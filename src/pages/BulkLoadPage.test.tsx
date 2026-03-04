@@ -67,16 +67,45 @@ async function createTestZip(): Promise<File> {
   return new File([blob], 'test-data.zip', { type: 'application/zip' });
 }
 
+function createTestJsonFile(): File {
+  const bundle = {
+    resourceType: 'Bundle',
+    type: 'transaction',
+    entry: [
+      {
+        fullUrl: 'urn:uuid:patient-1',
+        resource: {
+          resourceType: 'Patient',
+          id: 'patient-1',
+          name: [{ given: ['Test'], family: 'Patient' }],
+        },
+      },
+      {
+        fullUrl: 'urn:uuid:obs-1',
+        resource: {
+          resourceType: 'Observation',
+          id: 'obs-1',
+          status: 'final',
+          code: { text: 'Heart Rate' },
+          subject: { reference: 'urn:uuid:patient-1' },
+        },
+      },
+    ],
+  };
+  const blob = new Blob([JSON.stringify(bundle)], { type: 'application/json' });
+  return new File([blob], 'bundle.json', { type: 'application/json' });
+}
+
 describe('BulkLoadPage', () => {
   it('renders the upload step initially', () => {
     renderBulkLoadPage();
     expect(screen.getByText('Bulk Load')).toBeDefined();
-    expect(screen.getByText('Parse ZIP')).toBeDefined();
+    expect(screen.getByText('Parse File')).toBeDefined();
   });
 
   it('parse button is disabled without a file', () => {
     renderBulkLoadPage();
-    const btn = screen.getByRole('button', { name: 'Parse ZIP' });
+    const btn = screen.getByRole('button', { name: 'Parse File' });
     expect(btn).toHaveProperty('disabled', true);
   });
 
@@ -87,12 +116,26 @@ describe('BulkLoadPage', () => {
 
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
     await user.upload(input, zipFile);
-    await user.click(screen.getByRole('button', { name: 'Parse ZIP' }));
+    await user.click(screen.getByRole('button', { name: 'Parse File' }));
 
     expect(await screen.findByText('Contents')).toBeDefined();
     expect(await screen.findByText('Patient')).toBeDefined();
     expect(await screen.findByText('Observation')).toBeDefined();
     expect(await screen.findByText('Condition')).toBeDefined();
+  });
+
+  it('parses a JSON file and shows preview', async () => {
+    renderBulkLoadPage();
+    const user = userEvent.setup();
+    const jsonFile = createTestJsonFile();
+
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    await user.upload(input, jsonFile);
+    await user.click(screen.getByRole('button', { name: 'Parse File' }));
+
+    expect(await screen.findByText('Contents')).toBeDefined();
+    expect(await screen.findByText('Patient')).toBeDefined();
+    expect(await screen.findByText('Observation')).toBeDefined();
   });
 
   it('uploads resources after selecting a target patient', async () => {
@@ -120,7 +163,7 @@ describe('BulkLoadPage', () => {
     // Upload and parse
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
     await user.upload(input, zipFile);
-    await user.click(screen.getByRole('button', { name: 'Parse ZIP' }));
+    await user.click(screen.getByRole('button', { name: 'Parse File' }));
 
     // Wait for preview
     expect(await screen.findByText('Contents')).toBeDefined();
