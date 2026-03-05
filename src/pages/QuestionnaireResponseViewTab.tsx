@@ -1,7 +1,7 @@
 // ABOUTME: Displays a completed QuestionnaireResponse in read-only mode using formbox-renderer.
 // ABOUTME: Fetches the referenced Questionnaire resource to provide the form structure.
 import { Alert, Loader, Stack } from '@mantine/core';
-import type { QuestionnaireResponse } from '@medplum/fhirtypes';
+import type { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { QuestionnaireOf, QuestionnaireResponseOf } from '@formbox/fhir';
 import type { JSX } from 'react';
@@ -10,7 +10,6 @@ import { safeErrorMessage } from '../errors';
 import Renderer from '@formbox/renderer';
 import { theme as formboxTheme } from '@formbox/mantine-theme';
 import '@formbox/mantine-theme/style.css';
-import type { Questionnaire } from '@medplum/fhirtypes';
 
 interface QuestionnaireResponseViewTabProps {
   readonly questionnaireResponse: QuestionnaireResponse;
