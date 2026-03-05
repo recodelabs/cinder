@@ -175,12 +175,12 @@ async function handleFhirProxy(req: Request, url: URL, validateStore: (url: stri
 // Start server when run directly
 if (import.meta.main) {
   try {
-    const { runMigrations } = await import('./server/db');
-    console.log('Running database migrations...');
-    await runMigrations();
-    console.log('Migrations complete.');
+    const { ensureTables } = await import('./server/db');
+    console.log('Ensuring database tables exist...');
+    await ensureTables();
+    console.log('Database ready.');
   } catch (err) {
-    console.error('Migration failed:', err);
+    console.error('Database setup failed:', err);
     process.exit(1);
   }
   const server = createServer();

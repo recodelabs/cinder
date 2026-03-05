@@ -19,7 +19,6 @@ WORKDIR /app
 COPY --from=build --chown=cinder /app/dist ./dist
 COPY --from=build --chown=cinder /app/server.ts .
 COPY --from=build --chown=cinder /app/server ./server
-COPY --from=build --chown=cinder /app/drizzle ./drizzle
 COPY --from=deps --chown=cinder /app/node_modules ./node_modules
 COPY --from=build --chown=cinder /app/package.json .
 USER cinder
