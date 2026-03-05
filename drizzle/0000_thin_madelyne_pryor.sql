@@ -1,4 +1,4 @@
-CREATE TABLE "saved_store" (
+CREATE TABLE IF NOT EXISTS "saved_store" (
 	"id" text PRIMARY KEY NOT NULL,
 	"user_email" text NOT NULL,
 	"name" text NOT NULL,
