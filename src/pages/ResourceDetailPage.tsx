@@ -1,7 +1,7 @@
 // ABOUTME: Fetches and displays a single FHIR resource with tabbed navigation.
-// ABOUTME: Tabs: Details (read-only view), Edit (form), JSON (raw editor).
+// ABOUTME: Tabs: Details, Edit, JSON, plus Fill (Questionnaire) and Response (QuestionnaireResponse).
 import { Alert, Button, Group, Loader, Stack, Tabs } from '@mantine/core';
-import type { RelatedPerson, Resource, ResourceType } from '@medplum/fhirtypes';
+import type { Questionnaire, QuestionnaireResponse, RelatedPerson, Resource, ResourceType } from '@medplum/fhirtypes';
 import { ResourceForm } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
@@ -11,6 +11,8 @@ import { safeErrorMessage } from '../errors';
 import { PatientRelationships } from './PatientRelationships';
 import { ResourceDetail } from './ResourceDetail';
 import { ResourceHeader } from './ResourceHeader';
+import { QuestionnaireFillTab } from './QuestionnaireFillTab';
+import { QuestionnaireResponseViewTab } from './QuestionnaireResponseViewTab';
 import { ResourceJsonTab } from './ResourceJsonTab';
 
 export function ResourceDetailPage(): JSX.Element {
@@ -85,6 +87,8 @@ export function ResourceDetailPage(): JSX.Element {
                 <Tabs.Tab value="details">Details</Tabs.Tab>
                 <Tabs.Tab value="edit">Edit</Tabs.Tab>
                 <Tabs.Tab value="json">JSON</Tabs.Tab>
+                {resourceType === 'Questionnaire' && <Tabs.Tab value="fill">Fill</Tabs.Tab>}
+                {resourceType === 'QuestionnaireResponse' && <Tabs.Tab value="response">Response</Tabs.Tab>}
               </Tabs.List>
               <Button variant="subtle" color="red" size="xs" onClick={handleDelete} disabled={saving} loading={saving}>
                 Delete
@@ -104,6 +108,16 @@ export function ResourceDetailPage(): JSX.Element {
             <Tabs.Panel value="json" pt="md">
               <ResourceJsonTab resource={resource} onSubmit={handleSubmit} />
             </Tabs.Panel>
+            {resourceType === 'Questionnaire' && (
+              <Tabs.Panel value="fill" pt="md">
+                <QuestionnaireFillTab questionnaire={resource as Questionnaire} />
+              </Tabs.Panel>
+            )}
+            {resourceType === 'QuestionnaireResponse' && (
+              <Tabs.Panel value="response" pt="md">
+                <QuestionnaireResponseViewTab questionnaireResponse={resource as QuestionnaireResponse} />
+              </Tabs.Panel>
+            )}
           </Tabs>
         </>
       )}
