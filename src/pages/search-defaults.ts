@@ -56,6 +56,10 @@ function getDefaultFields(resourceType: string): string[] {
       return ['code', 'status'];
     case 'ServiceRequest':
       return ['subject', 'code', 'status'];
+    case 'Questionnaire':
+      return ['_id', 'title', 'status', '_lastUpdated'];
+    case 'QuestionnaireResponse':
+      return ['_id', 'questionnaire', 'subject', 'status', '_lastUpdated'];
     case 'Specimen':
       return ['subject', 'type', 'status'];
     default:
