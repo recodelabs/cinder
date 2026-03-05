@@ -98,6 +98,23 @@ export function createServer(options: ServerOptions = {}) {
     async fetch(req) {
       const url = new URL(req.url);
 
+      // API routes for saved stores
+      if (url.pathname === '/api/stores' && req.method === 'GET') {
+        const { handleListStores } = await import('./server/stores-api');
+        return withSecurityHeaders(await handleListStores(req));
+      }
+      if (url.pathname === '/api/stores' && req.method === 'POST') {
+        const { handleCreateStore } = await import('./server/stores-api');
+        return withSecurityHeaders(await handleCreateStore(req));
+      }
+      if (url.pathname.startsWith('/api/stores/') && req.method === 'DELETE') {
+        const storeId = url.pathname.split('/')[3];
+        if (storeId) {
+          const { handleDeleteStore } = await import('./server/stores-api');
+          return withSecurityHeaders(await handleDeleteStore(req, storeId));
+        }
+      }
+
       // FHIR proxy
       if (url.pathname.startsWith('/fhir')) {
         return withSecurityHeaders(await handleFhirProxy(req, url, validateStore));
