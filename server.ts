@@ -174,8 +174,15 @@ async function handleFhirProxy(req: Request, url: URL, validateStore: (url: stri
 
 // Start server when run directly
 if (import.meta.main) {
-  const { runMigrations } = await import('./server/db');
-  await runMigrations();
+  try {
+    const { runMigrations } = await import('./server/db');
+    console.log('Running database migrations...');
+    await runMigrations();
+    console.log('Migrations complete.');
+  } catch (err) {
+    console.error('Migration failed:', err);
+    process.exit(1);
+  }
   const server = createServer();
   console.log(`Cinder server listening on port ${server.port}`);
 }
