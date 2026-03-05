@@ -18,7 +18,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 const tokenStore = new TokenStore();
 
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string;
-const SCOPES = 'https://www.googleapis.com/auth/cloud-platform';
+const SCOPES = 'openid email https://www.googleapis.com/auth/cloud-platform';
 
 interface AuthProviderProps {
   readonly children: ReactNode;
