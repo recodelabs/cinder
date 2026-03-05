@@ -1,6 +1,7 @@
 // ABOUTME: Postgres connection and Drizzle ORM instance.
-// ABOUTME: Reads DATABASE_URL from environment, exports db for use in API routes.
+// ABOUTME: Reads DATABASE_URL from environment, runs migrations on startup, exports db for use in API routes.
 import { drizzle } from 'drizzle-orm/postgres-js';
+import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import postgres from 'postgres';
 import * as schema from './schema';
 
@@ -11,3 +12,7 @@ if (!connectionString) {
 
 const client = postgres(connectionString);
 export const db = drizzle(client, { schema });
+
+export async function runMigrations() {
+  await migrate(db, { migrationsFolder: './drizzle' });
+}

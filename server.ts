@@ -15,7 +15,7 @@ const SECURITY_HEADERS: Record<string, string> = {
   'Content-Security-Policy': [
     "default-src 'self'",
     "script-src 'self' https://accounts.google.com",
-    "connect-src 'self' https://healthcare.googleapis.com https://tx.fhir.org https://oauth2.googleapis.com https://accounts.google.com",
+    "connect-src 'self' https://healthcare.googleapis.com https://www.googleapis.com https://tx.fhir.org https://oauth2.googleapis.com https://accounts.google.com",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data:",
     "frame-ancestors 'none'",
@@ -174,6 +174,8 @@ async function handleFhirProxy(req: Request, url: URL, validateStore: (url: stri
 
 // Start server when run directly
 if (import.meta.main) {
+  const { runMigrations } = await import('./server/db');
+  await runMigrations();
   const server = createServer();
   console.log(`Cinder server listening on port ${server.port}`);
 }
