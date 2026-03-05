@@ -22,7 +22,7 @@ import { loadSchemas } from './schemas';
 const isDevProxy = !import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 function AppContent(): JSX.Element {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, accessToken } = useAuth();
   const [storeConfig, setStoreConfig] = useState<StoreConfig | undefined>(loadStoreConfig);
   const [schemasReady, setSchemasReady] = useState(false);
 
@@ -45,7 +45,7 @@ function AppContent(): JSX.Element {
   }
 
   if (!isDevProxy && !storeConfig) {
-    return <StoreSelector onSubmit={handleStoreSubmit} />;
+    return <StoreSelector onSubmit={handleStoreSubmit} accessToken={accessToken} />;
   }
 
   if (!schemasReady) {

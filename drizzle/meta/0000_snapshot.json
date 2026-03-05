@@ -1,0 +1,97 @@
+{
+  "id": "f7039d31-a030-4243-b337-1e7452cfe1b4",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.saved_store": {
+      "name": "saved_store",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_email": {
+          "name": "user_email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "gcp_project": {
+          "name": "gcp_project",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "gcp_location": {
+          "name": "gcp_location",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "gcp_dataset": {
+          "name": "gcp_dataset",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "gcp_fhir_store": {
+          "name": "gcp_fhir_store",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "saved_store_user_email_name_unique": {
+          "name": "saved_store_user_email_name_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "user_email",
+            "name"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}
