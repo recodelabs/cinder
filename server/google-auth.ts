@@ -14,18 +14,14 @@ export async function getEmailFromToken(accessToken: string): Promise<string | n
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     if (!response.ok) {
-      const body = await response.text();
-      console.error(`Google userinfo failed: ${response.status} ${body}`);
       return null;
     }
     const info: GoogleUserInfo = await response.json();
     if (!info.email || !info.email_verified) {
-      console.error('Google userinfo missing email or not verified:', info);
       return null;
     }
     return info.email;
-  } catch (err) {
-    console.error('Google userinfo fetch error:', err);
+  } catch {
     return null;
   }
 }
