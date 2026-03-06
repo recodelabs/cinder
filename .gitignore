@@ -6,3 +6,4 @@ dist/
 .env.local
 service-account.json
 screens/
+.claude/
