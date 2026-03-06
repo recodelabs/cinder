@@ -87,6 +87,7 @@ export function ResourceTypePage(): JSX.Element {
     <Stack gap={0}>
       <SearchFilterBar resourceType={resourceType ?? ''} />
       <SearchControl
+        key={resourceType}
         search={search}
         onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
         onChange={handleChange}
