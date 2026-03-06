@@ -106,4 +106,31 @@ describe('SearchFilterBar', () => {
     await user.type(input, 'test-id');
     expect(input).toHaveValue('test-id');
   });
+
+  it('shows active filter pills when filters are in URL', () => {
+    renderFilterBar('Observation', ['/Observation?subject=Patient/abc-123&code=1234']);
+    expect(screen.getByText('Patient: abc-123')).toBeDefined();
+    expect(screen.getByText('Code: 1234')).toBeDefined();
+  });
+
+  it('does not show filter pills when no filters are active', () => {
+    renderFilterBar('Observation');
+    expect(screen.queryByText(/Patient:/)).toBeNull();
+    expect(screen.queryByText(/Code:/)).toBeNull();
+    expect(screen.queryByText(/Status:/)).toBeNull();
+  });
+
+  it('shows pill for single active filter', () => {
+    renderFilterBar('Observation', ['/Observation?status=active']);
+    expect(screen.getByText('Status: active')).toBeDefined();
+    expect(screen.queryByText(/Patient:/)).toBeNull();
+    expect(screen.queryByText(/Code:/)).toBeNull();
+  });
+
+  it('renders remove button on each active filter pill', () => {
+    renderFilterBar('Observation', ['/Observation?subject=Patient/abc-123&code=1234']);
+    const patientPill = screen.getByText('Patient: abc-123');
+    const removeButton = patientPill.closest('[data-type="pill"]')?.querySelector('button');
+    expect(removeButton).not.toBeNull();
+  });
 });
