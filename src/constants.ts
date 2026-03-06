@@ -9,6 +9,8 @@ export const RESOURCE_TYPES = [
   'Observation',
   'Condition',
   'Procedure',
+  'Questionnaire',
+  'QuestionnaireResponse',
   'RelatedPerson',
   'MedicationRequest',
   'AllergyIntolerance',

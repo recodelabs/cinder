@@ -15,6 +15,9 @@
     "db:push": "drizzle-kit push"
   },
   "dependencies": {
+    "@formbox/mantine-theme": "^0.3.0",
+    "@formbox/renderer": "^0.3.0",
+    "@lhncbc/ucum-lhc": "^7.1.6",
     "@mantine/core": "^8.3.14",
     "@mantine/hooks": "^8.3.14",
     "@mantine/notifications": "^8.3.14",
@@ -25,8 +28,13 @@
     "@medplum/react": "^5.0.14",
     "@medplum/react-hooks": "^5.0.14",
     "@tabler/icons-react": "^3.36.1",
+    "classnames": "^2.5.1",
     "drizzle-orm": "^0.45.1",
+    "fhirpath": "^4.8.5",
     "jszip": "^3.10.1",
+    "mobx": "^6.15.0",
+    "mobx-react-lite": "^4.1.1",
+    "mobx-utils": "^6.1.1",
     "postgres": "^3.4.8",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
