@@ -44,6 +44,7 @@ const PATIENT_RESOURCE_TYPES: ReadonlyArray<{ readonly type: string; readonly pa
   { type: 'Goal', param: 'subject' },
   { type: 'Observation', param: 'subject' },
   { type: 'MedicationRequest', param: 'subject' },
+  { type: 'MedicationStatement', param: 'subject' },
   { type: 'Procedure', param: 'subject' },
   { type: 'Immunization', param: 'patient' },
   { type: 'AllergyIntolerance', param: 'patient' },

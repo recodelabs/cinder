@@ -13,6 +13,7 @@ export const RESOURCE_TYPES = [
   'QuestionnaireResponse',
   'RelatedPerson',
   'MedicationRequest',
+  'MedicationStatement',
   'AllergyIntolerance',
   'Immunization',
   'DiagnosticReport',

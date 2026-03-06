@@ -28,6 +28,8 @@ function getDefaultFields(resourceType: string): string[] {
       return ['subject', 'code', 'clinical-status'];
     case 'MedicationRequest':
       return ['subject', 'medication', 'status'];
+    case 'MedicationStatement':
+      return ['subject', 'medication', 'status'];
     case 'DiagnosticReport':
       return ['subject', 'code', 'status'];
     case 'Procedure':

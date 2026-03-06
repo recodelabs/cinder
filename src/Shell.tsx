@@ -112,7 +112,7 @@ export function Shell({ onChangeStore }: ShellProps = {}): JSX.Element {
         </Spotlight.ActionsList>
       </Spotlight.Root>
 
-      <AppShell.Navbar p="xs">
+      <AppShell.Navbar p="xs" style={{ overflowY: 'auto' }}>
         <NavLink
           label="Resources"
           leftSection={<IconList size={16} />}
