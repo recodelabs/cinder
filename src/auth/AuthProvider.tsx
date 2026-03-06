@@ -1,6 +1,6 @@
 // ABOUTME: React context provider for Google OAuth2 authentication state.
 // ABOUTME: Exposes sign-in/sign-out and access token to child components.
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { JSX } from 'react';
 import { clearStoreConfig } from '../config/StoreConfig';
 import { TokenStore, type TokenResponse } from './google-auth';
@@ -8,6 +8,7 @@ import { TokenStore, type TokenResponse } from './google-auth';
 interface AuthContextValue {
   isAuthenticated: boolean;
   accessToken: string | undefined;
+  email: string | undefined;
   signIn: () => void;
   signOut: () => void;
 }
@@ -17,7 +18,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 const tokenStore = new TokenStore();
 
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string;
-const SCOPES = 'https://www.googleapis.com/auth/cloud-platform';
+const SCOPES = 'openid email https://www.googleapis.com/auth/cloud-platform';
 
 interface AuthProviderProps {
   readonly children: ReactNode;
@@ -25,11 +26,34 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
   const [authenticated, setAuthenticated] = useState(tokenStore.isAuthenticated());
+  const [email, setEmail] = useState<string | undefined>(undefined);
 
   const handleTokenResponse = useCallback((response: TokenResponse) => {
     tokenStore.setToken(response);
     setAuthenticated(true);
+    fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: `Bearer ${response.access_token}` },
+    })
+      .then((r) => r.json())
+      .then((info: { email?: string }) => {
+        if (info.email) setEmail(info.email);
+      })
+      .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    const token = tokenStore.getAccessToken();
+    if (token && !email) {
+      fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((r) => r.json())
+        .then((info: { email?: string }) => {
+          if (info.email) setEmail(info.email);
+        })
+        .catch(() => {});
+    }
+  }, [authenticated, email]);
 
   const signIn = useCallback(() => {
     const google = (window as any).google;
@@ -54,16 +78,18 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
     tokenStore.clear();
     clearStoreConfig();
     setAuthenticated(false);
+    setEmail(undefined);
   }, []);
 
   const value = useMemo(
     () => ({
       isAuthenticated: authenticated,
       accessToken: tokenStore.getAccessToken(),
+      email,
       signIn,
       signOut,
     }),
-    [authenticated, signIn, signOut]
+    [authenticated, email, signIn, signOut]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -7,12 +7,19 @@ ARG VITE_GOOGLE_CLIENT_ID
 ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
 RUN bun run build
 
+FROM oven/bun:1 AS deps
+WORKDIR /app
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile --production
+
 FROM oven/bun:1
 RUN echo "cinder:x:10001:10001::/app:/bin/sh" >> /etc/passwd && \
     echo "cinder:x:10001:" >> /etc/group
 WORKDIR /app
 COPY --from=build --chown=cinder /app/dist ./dist
 COPY --from=build --chown=cinder /app/server.ts .
+COPY --from=build --chown=cinder /app/server ./server
+COPY --from=deps --chown=cinder /app/node_modules ./node_modules
 COPY --from=build --chown=cinder /app/package.json .
 USER cinder
 EXPOSE 3000

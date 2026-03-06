@@ -15,7 +15,7 @@ const SECURITY_HEADERS: Record<string, string> = {
   'Content-Security-Policy': [
     "default-src 'self'",
     "script-src 'self' https://accounts.google.com",
-    "connect-src 'self' https://healthcare.googleapis.com https://tx.fhir.org https://oauth2.googleapis.com https://accounts.google.com",
+    "connect-src 'self' https://healthcare.googleapis.com https://www.googleapis.com https://tx.fhir.org https://oauth2.googleapis.com https://accounts.google.com",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data:",
     "frame-ancestors 'none'",
@@ -98,6 +98,23 @@ export function createServer(options: ServerOptions = {}) {
     async fetch(req) {
       const url = new URL(req.url);
 
+      // API routes for saved stores
+      if (url.pathname === '/api/stores' && req.method === 'GET') {
+        const { handleListStores } = await import('./server/stores-api');
+        return withSecurityHeaders(await handleListStores(req));
+      }
+      if (url.pathname === '/api/stores' && req.method === 'POST') {
+        const { handleCreateStore } = await import('./server/stores-api');
+        return withSecurityHeaders(await handleCreateStore(req));
+      }
+      if (url.pathname.startsWith('/api/stores/') && req.method === 'DELETE') {
+        const storeId = url.pathname.split('/')[3];
+        if (storeId) {
+          const { handleDeleteStore } = await import('./server/stores-api');
+          return withSecurityHeaders(await handleDeleteStore(req, storeId));
+        }
+      }
+
       // FHIR proxy
       if (url.pathname.startsWith('/fhir')) {
         return withSecurityHeaders(await handleFhirProxy(req, url, validateStore));
@@ -157,6 +174,15 @@ async function handleFhirProxy(req: Request, url: URL, validateStore: (url: stri
 
 // Start server when run directly
 if (import.meta.main) {
+  try {
+    const { ensureTables } = await import('./server/db');
+    console.log('Ensuring database tables exist...');
+    await ensureTables();
+    console.log('Database ready.');
+  } catch (err) {
+    console.error('Database setup failed:', err);
+    process.exit(1);
+  }
   const server = createServer();
   console.log(`Cinder server listening on port ${server.port}`);
 }
