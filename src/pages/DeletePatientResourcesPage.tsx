@@ -27,25 +27,33 @@ import type { JSX } from 'react';
 import { useCallback, useRef, useState } from 'react';
 import { safeErrorMessage } from '../errors';
 
-/** Maps FHIR resource types to the search parameter that references a Patient. */
+/**
+ * Maps FHIR resource types to the search parameter that references a Patient.
+ * Ordered so that referencing resources are deleted before referenced ones
+ * (e.g. DiagnosticReport before Observation, Observation before Encounter)
+ * to satisfy GCP Healthcare API referential integrity constraints.
+ */
 const PATIENT_RESOURCE_TYPES: ReadonlyArray<{ readonly type: string; readonly param: string }> = [
-  { type: 'Observation', param: 'subject' },
-  { type: 'Condition', param: 'subject' },
-  { type: 'Encounter', param: 'subject' },
-  { type: 'MedicationRequest', param: 'subject' },
-  { type: 'DiagnosticReport', param: 'subject' },
-  { type: 'Procedure', param: 'subject' },
-  { type: 'CarePlan', param: 'subject' },
-  { type: 'CareTeam', param: 'subject' },
-  { type: 'DocumentReference', param: 'subject' },
-  { type: 'Goal', param: 'subject' },
-  { type: 'ServiceRequest', param: 'subject' },
-  { type: 'Specimen', param: 'subject' },
-  { type: 'AllergyIntolerance', param: 'patient' },
-  { type: 'Immunization', param: 'patient' },
+  // Tier 1: Top-level resources that reference many others
   { type: 'Claim', param: 'patient' },
-  { type: 'RelatedPerson', param: 'patient' },
+  { type: 'CarePlan', param: 'subject' },
+  { type: 'DiagnosticReport', param: 'subject' },
+  { type: 'DocumentReference', param: 'subject' },
+  { type: 'ServiceRequest', param: 'subject' },
+  // Tier 2: Mid-level resources (reference Encounter, Specimen, etc.)
+  { type: 'Goal', param: 'subject' },
+  { type: 'Observation', param: 'subject' },
+  { type: 'MedicationRequest', param: 'subject' },
+  { type: 'Procedure', param: 'subject' },
+  { type: 'Immunization', param: 'patient' },
+  { type: 'AllergyIntolerance', param: 'patient' },
+  { type: 'CareTeam', param: 'subject' },
+  // Tier 3: Commonly-referenced resources
   { type: 'Coverage', param: 'beneficiary' },
+  { type: 'Encounter', param: 'subject' },
+  { type: 'Condition', param: 'subject' },
+  { type: 'Specimen', param: 'subject' },
+  { type: 'RelatedPerson', param: 'patient' },
 ];
 
 type Step = 'select' | 'preview' | 'progress' | 'results';
@@ -261,25 +269,45 @@ export function DeletePatientResourcesPage(): JSX.Element {
     totalResources = idsToDelete.length + results.length;
     setDeleteTotal(totalResources);
 
-    // Now delete each resource individually
+    // Delete each resource, then retry failures (handles remaining referential integrity issues)
     let processed = results.length;
-    for (const { type, id } of idsToDelete) {
-      if (cancelRef.current) break;
-      try {
-        await medplum.deleteResource(type as ResourceType, id);
-        results.push({ resourceType: type, id, success: true });
-      } catch (err: unknown) {
-        results.push({
-          resourceType: type,
-          id,
-          success: false,
-          error: toErrorMessage(err),
-        });
+    let pending = idsToDelete;
+
+    for (let pass = 0; pass < 2 && pending.length > 0; pass++) {
+      const retryable: typeof pending = [];
+
+      for (const { type, id } of pending) {
+        if (cancelRef.current) break;
+        try {
+          await medplum.deleteResource(type as ResourceType, id);
+          results.push({ resourceType: type, id, success: true });
+        } catch (err: unknown) {
+          const msg = toErrorMessage(err);
+          if (pass === 0 && msg.includes('is_referred_to')) {
+            // Referential integrity error — retry after other deletions
+            retryable.push({ type, id });
+          } else {
+            results.push({ resourceType: type, id, success: false, error: msg });
+          }
+        }
+        processed++;
+        setDeleteIndex(processed);
+        setDeleteResults([...results]);
       }
-      processed++;
-      setDeleteIndex(processed);
-      setDeleteResults([...results]);
+
+      pending = retryable;
+      if (pending.length > 0) {
+        // Adjust total to account for retry pass
+        totalResources += pending.length;
+        setDeleteTotal(totalResources);
+      }
     }
+
+    // Any remaining retryable items that still failed
+    for (const { type, id } of pending) {
+      results.push({ resourceType: type, id, success: false, error: 'Still referenced after retry' });
+    }
+    setDeleteResults([...results]);
 
     setDeleting(false);
     setStep('results');
