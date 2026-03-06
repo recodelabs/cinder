@@ -84,8 +84,10 @@ const filtersByResourceType: Record<string, readonly FilterConfig[]> = {
   ],
 };
 
+const EMPTY_FILTERS: readonly FilterConfig[] = [];
+
 export function getFiltersForResourceType(resourceType: string): readonly FilterConfig[] {
-  return filtersByResourceType[resourceType] ?? [];
+  return filtersByResourceType[resourceType] ?? EMPTY_FILTERS;
 }
 
 /**
