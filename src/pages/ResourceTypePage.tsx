@@ -5,7 +5,7 @@ import type { SearchRequest } from '@medplum/core';
 import type { ResourceType } from '@medplum/fhirtypes';
 import type { SearchChangeEvent, SearchLoadEvent } from '@medplum/react';
 import { SearchControl } from '@medplum/react';
-import { Stack } from '@mantine/core';
+import { Stack, Title } from '@mantine/core';
 import type { JSX } from 'react';
 import { useCallback, useMemo, useRef } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
@@ -85,6 +85,7 @@ export function ResourceTypePage(): JSX.Element {
 
   return (
     <Stack gap={0}>
+      <Title order={3} px="sm" pt="sm">{resourceType}</Title>
       <SearchFilterBar resourceType={resourceType ?? ''} />
       <SearchControl
         key={resourceType}
