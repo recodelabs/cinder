@@ -4,6 +4,7 @@
 export const RESOURCE_TYPES = [
   'Patient',
   'Practitioner',
+  'PractitionerRole',
   'Organization',
   'Encounter',
   'Observation',

@@ -5,5 +5,6 @@ dist/
 .env
 .env.local
 service-account.json
+settings/turn-healthpass-363af99af5c0.json
 screens/
 .claude/
