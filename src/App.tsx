@@ -7,7 +7,7 @@ import { Route, Routes } from 'react-router';
 import { AppProviders, FhirProvider } from './AppProviders';
 import { useAuth } from './auth/AuthProvider';
 import type { StoreConfig } from './config/StoreConfig';
-import { clearStoreConfig, loadStoreConfig, saveStoreConfig } from './config/StoreConfig';
+import { loadStoreConfig, saveStoreConfig } from './config/StoreConfig';
 import { StoreSelector } from './config/StoreSelector';
 import { Shell } from './Shell';
 import { HomePage } from './pages/HomePage';
@@ -35,11 +35,6 @@ function AppContent(): JSX.Element {
     setStoreConfig(config);
   }, []);
 
-  const handleChangeStore = useCallback(() => {
-    clearStoreConfig();
-    setStoreConfig(undefined);
-  }, []);
-
   if (!isDevProxy && !isAuthenticated) {
     return <SignInPage />;
   }
@@ -55,7 +50,7 @@ function AppContent(): JSX.Element {
   return (
     <FhirProvider storeConfig={storeConfig}>
       <Routes>
-        <Route element={<Shell onChangeStore={isDevProxy ? undefined : handleChangeStore} />}>
+        <Route element={<Shell />}>
           <Route index element={<HomePage />} />
           <Route path="bulk-load" element={<BulkLoadPage />} />
           <Route path="delete-patient-resources" element={<DeletePatientResourcesPage />} />
