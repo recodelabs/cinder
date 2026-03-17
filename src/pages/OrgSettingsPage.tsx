@@ -13,7 +13,7 @@ import {
   TextInput,
   Title,
 } from '@mantine/core';
-import { IconCheck, IconTrash, IconUpload } from '@tabler/icons-react';
+import { IconCheck, IconTrash } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { authClient } from '../auth/auth-client';
@@ -177,7 +177,6 @@ function CredentialsTab({ orgId }: TabProps): JSX.Element {
   const [configured, setConfigured] = useState<boolean | null>(null);
   const [message, setMessage] = useState('');
   const [messageColor, setMessageColor] = useState<'green' | 'red'>('green');
-  const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -200,7 +199,6 @@ function CredentialsTab({ orgId }: TabProps): JSX.Element {
     const file = e.target.files?.[0];
     if (!file) return;
     setMessage('');
-    setUploading(true);
     try {
       const text = await file.text();
       const response = await fetch(`/api/orgs/${orgId}/credential`, {
@@ -222,7 +220,6 @@ function CredentialsTab({ orgId }: TabProps): JSX.Element {
       setMessage(err instanceof Error ? err.message : 'Failed to upload credentials');
       setMessageColor('red');
     } finally {
-      setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
@@ -243,22 +240,12 @@ function CredentialsTab({ orgId }: TabProps): JSX.Element {
           )}
         </Group>
       </Card>
-      <label style={{ display: 'inline-block' }}>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".json"
-          style={{ display: 'none' }}
-          onChange={handleFileChange}
-        />
-        <Button
-          component="span"
-          leftSection={<IconUpload size={16} />}
-          loading={uploading}
-        >
-          Upload Service Account JSON
-        </Button>
-      </label>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".json"
+        onChange={handleFileChange}
+      />
       {message && (
         <Text size="sm" c={messageColor}>
           {message}
