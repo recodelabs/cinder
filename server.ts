@@ -228,40 +228,60 @@ async function handleFhirProxy(req: Request, url: URL): Promise<Response> {
     throw e;
   }
 
+  // Determine org auth mode from Better Auth metadata
+  const orgRows = await db.execute<{ metadata: string | null }>(
+    (await import('drizzle-orm')).sql`SELECT metadata FROM organization WHERE id = ${proj.organizationId} LIMIT 1`
+  );
+  const orgMeta = orgRows[0]?.metadata ? JSON.parse(orgRows[0].metadata) as { authMode?: string } : {};
+  const useUserToken = orgMeta.authMode === 'user_token';
+
   // Get or mint GCP access token
   const { tokenCache } = await import('./server/routes/shared');
-  let gcpToken = tokenCache.get(proj.organizationId);
+  let gcpToken = useUserToken ? null : tokenCache.get(proj.organizationId);
 
   if (!gcpToken) {
-    const [cred] = await db
-      .select()
-      .from(orgCredential)
-      .where(eq(orgCredential.organizationId, proj.organizationId))
-      .limit(1);
+    if (useUserToken) {
+      // Use the signed-in user's own Google OAuth token
+      const { getUserGoogleToken } = await import('./server/user-token');
+      const token = await getUserGoogleToken(session.user.id);
+      if (!token) {
+        return Response.json(
+          { error: 'Your Google session has expired — please sign in again' },
+          { status: 401 },
+        );
+      }
+      gcpToken = token;
+    } else {
+      const [cred] = await db
+        .select()
+        .from(orgCredential)
+        .where(eq(orgCredential.organizationId, proj.organizationId))
+        .limit(1);
 
-    if (!cred) {
-      return Response.json(
-        { error: 'Organization has no service account configured' },
-        { status: 503 },
-      );
-    }
+      if (!cred) {
+        return Response.json(
+          { error: 'Organization has no service account configured' },
+          { status: 503 },
+        );
+      }
 
-    try {
-      const { decryptCredential, getMasterKey } = await import('./server/crypto');
-      const masterKey = getMasterKey(cred.keyVersion);
-      const serviceAccountJson = decryptCredential(cred, masterKey);
+      try {
+        const { decryptCredential, getMasterKey } = await import('./server/crypto');
+        const masterKey = getMasterKey(cred.keyVersion);
+        const serviceAccountJson = decryptCredential(cred, masterKey);
 
-      const { mintGcpToken } = await import('./server/gcp-token');
-      const token = await mintGcpToken(serviceAccountJson);
-      tokenCache.set(proj.organizationId, token.accessToken, token.expiresInSeconds);
-      gcpToken = token.accessToken;
-    } catch (e) {
-      console.error('Failed to mint GCP token:', e);
-      tokenCache.evict(proj.organizationId);
-      return Response.json(
-        { error: 'Failed to authenticate to GCP — service account may be invalid or revoked' },
-        { status: 502 },
-      );
+        const { mintGcpToken } = await import('./server/gcp-token');
+        const token = await mintGcpToken(serviceAccountJson);
+        tokenCache.set(proj.organizationId, token.accessToken, token.expiresInSeconds);
+        gcpToken = token.accessToken;
+      } catch (e) {
+        console.error('Failed to mint GCP token:', e);
+        tokenCache.evict(proj.organizationId);
+        return Response.json(
+          { error: 'Failed to authenticate to GCP — service account may be invalid or revoked' },
+          { status: 502 },
+        );
+      }
     }
   }
 

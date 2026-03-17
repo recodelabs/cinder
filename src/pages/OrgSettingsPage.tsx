@@ -30,7 +30,8 @@ interface Member {
 }
 
 export function OrgSettingsPage(): JSX.Element {
-  const { activeOrgId } = useOrg();
+  const { activeOrgId, activeOrgAuthMode } = useOrg();
+  const isServiceAccount = activeOrgAuthMode === 'service_account';
 
   return (
     <Stack gap="md">
@@ -38,14 +39,16 @@ export function OrgSettingsPage(): JSX.Element {
       <Tabs defaultValue="members">
         <Tabs.List>
           <Tabs.Tab value="members">Members</Tabs.Tab>
-          <Tabs.Tab value="credentials">Credentials</Tabs.Tab>
+          {isServiceAccount && <Tabs.Tab value="credentials">Credentials</Tabs.Tab>}
         </Tabs.List>
         <Tabs.Panel value="members" pt="md">
           {activeOrgId ? <MembersTab orgId={activeOrgId} /> : <Text c="dimmed">No organization selected</Text>}
         </Tabs.Panel>
-        <Tabs.Panel value="credentials" pt="md">
-          {activeOrgId ? <CredentialsTab orgId={activeOrgId} /> : <Text c="dimmed">No organization selected</Text>}
-        </Tabs.Panel>
+        {isServiceAccount && (
+          <Tabs.Panel value="credentials" pt="md">
+            {activeOrgId ? <CredentialsTab orgId={activeOrgId} /> : <Text c="dimmed">No organization selected</Text>}
+          </Tabs.Panel>
+        )}
       </Tabs>
     </Stack>
   );

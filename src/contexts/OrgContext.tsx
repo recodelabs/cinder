@@ -19,6 +19,7 @@ export interface Project {
 interface OrgContextValue {
   readonly activeOrgId: string | undefined;
   readonly activeOrgSlug: string | undefined;
+  readonly activeOrgAuthMode: 'service_account' | 'user_token';
   readonly activeProject: Project | undefined;
   readonly projects: Project[];
   readonly setActiveOrg: (orgId: string) => void;
@@ -56,6 +57,9 @@ export function OrgProvider({ children }: OrgProviderProps): JSX.Element {
 
   const activeOrg = authClient.useActiveOrganization();
   const activeOrgSlug = activeOrg.data?.slug ?? undefined;
+  const activeOrgAuthMode = ((activeOrg.data?.metadata as { authMode?: string } | null)?.authMode === 'user_token'
+    ? 'user_token'
+    : 'service_account') as 'service_account' | 'user_token';
 
   // Sync stored org with Better Auth on mount
   useEffect(() => {
@@ -105,13 +109,14 @@ export function OrgProvider({ children }: OrgProviderProps): JSX.Element {
     () => ({
       activeOrgId,
       activeOrgSlug,
+      activeOrgAuthMode,
       activeProject,
       projects,
       setActiveOrg,
       setActiveProject,
       refreshProjects,
     }),
-    [activeOrgId, activeOrgSlug, activeProject, projects, setActiveOrg, setActiveProject, refreshProjects]
+    [activeOrgId, activeOrgSlug, activeOrgAuthMode, activeProject, projects, setActiveOrg, setActiveProject, refreshProjects]
   );
 
   return <OrgContext.Provider value={value}>{children}</OrgContext.Provider>;
