@@ -5,6 +5,7 @@ import {
   Badge,
   Button,
   Card,
+  FileInput,
   Group,
   Stack,
   Table,
@@ -15,7 +16,7 @@ import {
 } from '@mantine/core';
 import { IconCheck, IconTrash, IconUpload } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { authClient } from '../auth/auth-client';
 import { useOrg } from '../contexts/OrgContext';
 
@@ -175,11 +176,10 @@ function MembersTab({ orgId }: TabProps): JSX.Element {
 
 function CredentialsTab({ orgId }: TabProps): JSX.Element {
   const [configured, setConfigured] = useState<boolean | null>(null);
-  const [fileName, setFileName] = useState('');
+  const [file, setFile] = useState<File | null>(null);
   const [message, setMessage] = useState('');
   const [messageColor, setMessageColor] = useState<'green' | 'red'>('green');
   const [loading, setLoading] = useState(false);
-  const fileRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     void (async () => {
@@ -197,10 +197,8 @@ function CredentialsTab({ orgId }: TabProps): JSX.Element {
     })();
   }, [orgId]);
 
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
-    const file = e.target.files?.[0];
+  const handleUpload = async (): Promise<void> => {
     if (!file) return;
-    setFileName(file.name);
     setMessage('');
     setLoading(true);
     try {
@@ -216,6 +214,7 @@ function CredentialsTab({ orgId }: TabProps): JSX.Element {
         setMessage('Credentials saved successfully');
         setMessageColor('green');
         setConfigured(true);
+        setFile(null);
       } else {
         const body = await response.json().catch(() => ({}));
         setMessage((body as { error?: string }).error ?? 'Failed to save credentials');
@@ -226,7 +225,6 @@ function CredentialsTab({ orgId }: TabProps): JSX.Element {
       setMessageColor('red');
     } finally {
       setLoading(false);
-      if (fileRef.current) fileRef.current.value = '';
     }
   };
 
@@ -246,26 +244,17 @@ function CredentialsTab({ orgId }: TabProps): JSX.Element {
           )}
         </Group>
       </Card>
-      <input
-        ref={fileRef}
-        id="sa-json-upload"
-        type="file"
-        accept=".json,application/json"
-        onChange={handleFile}
-        style={{ position: 'fixed', left: -9999, opacity: 0 }}
+      <FileInput
+        label="Service Account JSON"
+        placeholder="Select a .json file"
+        accept=".json"
+        value={file}
+        onChange={setFile}
+        leftSection={<IconUpload size={16} />}
       />
-      <Group>
-        <Button
-          leftSection={<IconUpload size={16} />}
-          loading={loading}
-          onClick={() => {
-            fileRef.current?.click();
-          }}
-        >
-          Choose .json file
-        </Button>
-        {fileName && <Text size="sm" c="dimmed">{fileName}</Text>}
-      </Group>
+      <Button onClick={handleUpload} disabled={!file} loading={loading}>
+        Upload Credentials
+      </Button>
       {message && (
         <Text size="sm" c={messageColor}>
           {message}

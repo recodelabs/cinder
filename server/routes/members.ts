@@ -1,9 +1,10 @@
 // ABOUTME: Member management API route handlers for organizations.
-// ABOUTME: Supports adding members via invitation and removing existing members.
+// ABOUTME: Supports adding members by email and removing existing members.
 
 import { z } from 'zod';
+import { sql } from 'drizzle-orm';
 import { requireOrgOwner } from '../middleware';
-import { auth } from '../auth';
+import { db } from '../db';
 
 const addMemberSchema = z.object({
   email: z.string().email(),
@@ -38,16 +39,35 @@ export async function handleDirectAddMember(
 
   const { email, role } = parsed.data;
 
-  try {
-    const result = await auth.api.createInvitation({
-      body: { organizationId: orgId, email, role },
-      headers: req.headers,
-    });
-    return Response.json(result, { status: 201 });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : 'Failed to add member';
-    return Response.json({ error: message }, { status: 400 });
+  // Look up user by email
+  const users = await db.execute<{ id: string }>(
+    sql`SELECT id FROM "user" WHERE email = ${email} LIMIT 1`
+  );
+  if (!users[0]) {
+    return Response.json(
+      { error: 'User not found — they need to sign in to Cinder first' },
+      { status: 404 },
+    );
   }
+
+  const userId = users[0].id;
+
+  // Check if already a member
+  const existing = await db.execute<{ id: string }>(
+    sql`SELECT id FROM "member" WHERE organization_id = ${orgId} AND user_id = ${userId} LIMIT 1`
+  );
+  if (existing[0]) {
+    return Response.json({ error: 'User is already a member' }, { status: 409 });
+  }
+
+  // Add directly as member
+  const memberId = crypto.randomUUID();
+  await db.execute(sql`
+    INSERT INTO "member" (id, organization_id, user_id, role, created_at)
+    VALUES (${memberId}, ${orgId}, ${userId}, ${role}, NOW())
+  `);
+
+  return Response.json({ id: memberId, userId, role }, { status: 201 });
 }
 
 export async function handleRemoveMember(
