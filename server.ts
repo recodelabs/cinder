@@ -243,7 +243,7 @@ async function handleFhirProxy(req: Request, url: URL): Promise<Response> {
     if (useUserToken) {
       // Use the signed-in user's own Google OAuth token
       const { getUserGoogleToken } = await import('./server/user-token');
-      const token = await getUserGoogleToken(session.user.id);
+      const token = await getUserGoogleToken(session.userId);
       if (!token) {
         return Response.json(
           { error: 'Your Google session has expired — please sign in again' },
