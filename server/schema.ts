@@ -1,5 +1,5 @@
-// ABOUTME: Drizzle schema for the saved_store table.
-// ABOUTME: Stores FHIR store configurations linked to user emails.
+// ABOUTME: Drizzle schema for the saved_store and org_credential tables.
+// ABOUTME: Stores FHIR store configurations and encrypted GCP service account credentials.
 import { pgTable, text, timestamp, unique } from 'drizzle-orm/pg-core';
 
 export const savedStore = pgTable('saved_store', {
@@ -15,3 +15,12 @@ export const savedStore = pgTable('saved_store', {
 }, (table) => [
   unique('saved_store_user_email_name_unique').on(table.userEmail, table.name),
 ]);
+
+export const orgCredential = pgTable('org_credential', {
+  orgId: text('org_id').primaryKey(),
+  iv: text('iv').notNull(),
+  ciphertext: text('ciphertext').notNull(),
+  tag: text('tag').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
