@@ -62,27 +62,35 @@ export async function handlePutCredential(req: Request, orgId: string): Promise<
   const encrypted = encryptCredential(body, getMasterKey());
 
   const existing = await db
-    .select({ orgId: orgCredential.orgId })
+    .select({ id: orgCredential.id })
     .from(orgCredential)
-    .where(eq(orgCredential.orgId, orgId))
+    .where(eq(orgCredential.organizationId, orgId))
     .limit(1);
 
   if (existing.length > 0) {
     await db
       .update(orgCredential)
       .set({
+        encryptedServiceAccount: encrypted.encryptedServiceAccount,
+        encryptedDek: encrypted.encryptedDek,
         iv: encrypted.iv,
-        ciphertext: encrypted.ciphertext,
-        tag: encrypted.tag,
+        authTag: encrypted.authTag,
+        dekIv: encrypted.dekIv,
+        dekAuthTag: encrypted.dekAuthTag,
+        keyVersion: encrypted.keyVersion,
         updatedAt: new Date(),
       })
-      .where(eq(orgCredential.orgId, orgId));
+      .where(eq(orgCredential.organizationId, orgId));
   } else {
     await db.insert(orgCredential).values({
-      orgId,
+      organizationId: orgId,
+      encryptedServiceAccount: encrypted.encryptedServiceAccount,
+      encryptedDek: encrypted.encryptedDek,
       iv: encrypted.iv,
-      ciphertext: encrypted.ciphertext,
-      tag: encrypted.tag,
+      authTag: encrypted.authTag,
+      dekIv: encrypted.dekIv,
+      dekAuthTag: encrypted.dekAuthTag,
+      keyVersion: encrypted.keyVersion,
     });
   }
 
@@ -105,7 +113,7 @@ export async function handleGetCredentialStatus(req: Request, orgId: string): Pr
       updatedAt: orgCredential.updatedAt,
     })
     .from(orgCredential)
-    .where(eq(orgCredential.orgId, orgId))
+    .where(eq(orgCredential.organizationId, orgId))
     .limit(1);
 
   const row = rows[0];
