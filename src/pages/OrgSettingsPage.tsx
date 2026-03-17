@@ -22,13 +22,11 @@ import { useOrg } from '../contexts/OrgContext';
 
 interface Member {
   readonly userId: string;
-  readonly email: string;
   readonly role: string;
-}
-
-interface OrgFullData {
-  readonly members?: readonly Member[];
-  readonly metadata?: Record<string, unknown>;
+  readonly user?: {
+    readonly email: string;
+    readonly name: string;
+  };
 }
 
 export function OrgSettingsPage(): JSX.Element {
@@ -68,7 +66,7 @@ function MembersTab({ orgId }: TabProps): JSX.Element {
       const result = await authClient.organization.getFullOrganization({
         query: { organizationId: orgId },
       });
-      const data = result.data as OrgFullData | undefined;
+      const data = result.data as { members?: readonly Member[] } | null;
       setMembers(data?.members ?? []);
     } catch {
       setMembers([]);
@@ -139,7 +137,7 @@ function MembersTab({ orgId }: TabProps): JSX.Element {
         <Table.Tbody>
           {members.map((member) => (
             <Table.Tr key={member.userId}>
-              <Table.Td>{member.email}</Table.Td>
+              <Table.Td>{member.user?.email ?? 'Pending'}</Table.Td>
               <Table.Td>
                 <Badge size="sm" variant="light">
                   {member.role}
@@ -172,11 +170,13 @@ function CredentialsTab({ orgId }: TabProps): JSX.Element {
   useEffect(() => {
     void (async () => {
       try {
-        const result = await authClient.organization.getFullOrganization({
-          query: { organizationId: orgId },
+        const response = await fetch(`/api/orgs/${orgId}/credential`, {
+          credentials: 'include',
         });
-        const data = result.data as OrgFullData | undefined;
-        setConfigured(!!data?.metadata && Object.keys(data.metadata).length > 0);
+        if (response.ok) {
+          const data = await response.json() as { configured: boolean };
+          setConfigured(data.configured);
+        }
       } catch {
         setConfigured(false);
       }

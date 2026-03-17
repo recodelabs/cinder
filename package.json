@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "db:rotate-keys": "bun server/rotate-keys.ts"
   },
   "dependencies": {
     "@formbox/mantine-theme": "^0.3.0",
