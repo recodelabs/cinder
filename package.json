@@ -28,6 +28,7 @@
     "@medplum/react": "^5.0.14",
     "@medplum/react-hooks": "^5.0.14",
     "@tabler/icons-react": "^3.36.1",
+    "better-auth": "^1.5.5",
     "classnames": "^2.5.1",
     "drizzle-orm": "^0.45.1",
     "fhirpath": "^4.8.5",
