@@ -10,13 +10,12 @@ import {
   Table,
   Tabs,
   Text,
-  Textarea,
   TextInput,
   Title,
 } from '@mantine/core';
-import { IconCheck, IconTrash } from '@tabler/icons-react';
+import { IconCheck, IconTrash, IconUpload } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { authClient } from '../auth/auth-client';
 import { useOrg } from '../contexts/OrgContext';
 
@@ -176,10 +175,11 @@ function MembersTab({ orgId }: TabProps): JSX.Element {
 
 function CredentialsTab({ orgId }: TabProps): JSX.Element {
   const [configured, setConfigured] = useState<boolean | null>(null);
-  const [json, setJson] = useState('');
+  const [fileName, setFileName] = useState('');
   const [message, setMessage] = useState('');
   const [messageColor, setMessageColor] = useState<'green' | 'red'>('green');
   const [loading, setLoading] = useState(false);
+  const fileRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     void (async () => {
@@ -197,32 +197,36 @@ function CredentialsTab({ orgId }: TabProps): JSX.Element {
     })();
   }, [orgId]);
 
-  const handleSave = async (): Promise<void> => {
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setFileName(file.name);
     setMessage('');
     setLoading(true);
     try {
-      JSON.parse(json); // validate JSON before sending
+      const text = await file.text();
+      JSON.parse(text);
       const response = await fetch(`/api/orgs/${orgId}/credential`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: json,
+        body: text,
       });
       if (response.ok) {
         setMessage('Credentials saved successfully');
         setMessageColor('green');
         setConfigured(true);
-        setJson('');
       } else {
         const body = await response.json().catch(() => ({}));
         setMessage((body as { error?: string }).error ?? 'Failed to save credentials');
         setMessageColor('red');
       }
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Invalid JSON');
+      setMessage(err instanceof Error ? err.message : 'Invalid JSON file');
       setMessageColor('red');
     } finally {
       setLoading(false);
+      if (fileRef.current) fileRef.current.value = '';
     }
   };
 
@@ -242,18 +246,26 @@ function CredentialsTab({ orgId }: TabProps): JSX.Element {
           )}
         </Group>
       </Card>
-      <Textarea
-        label="Service Account JSON"
-        description="Open your service account JSON file, copy all the contents, and paste here"
-        placeholder={'{\n  "type": "service_account",\n  ...\n}'}
-        rows={6}
-        value={json}
-        onChange={(e) => setJson(e.currentTarget.value)}
-        styles={{ input: { fontFamily: 'monospace', fontSize: 12 } }}
+      <input
+        ref={fileRef}
+        id="sa-json-upload"
+        type="file"
+        accept=".json,application/json"
+        onChange={handleFile}
+        style={{ position: 'fixed', left: -9999, opacity: 0 }}
       />
-      <Button onClick={handleSave} loading={loading} disabled={!json.trim()}>
-        Save Credentials
-      </Button>
+      <Group>
+        <Button
+          leftSection={<IconUpload size={16} />}
+          loading={loading}
+          onClick={() => {
+            fileRef.current?.click();
+          }}
+        >
+          Choose .json file
+        </Button>
+        {fileName && <Text size="sm" c="dimmed">{fileName}</Text>}
+      </Group>
       {message && (
         <Text size="sm" c={messageColor}>
           {message}
