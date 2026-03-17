@@ -7,30 +7,24 @@ import { loadSchemas } from '../schemas';
 import { expandValueSet } from './valuesets';
 
 export interface HealthcareMedplumClientConfig {
-  getAccessToken: () => string | undefined;
-  storeBaseUrl?: string;
+  projectId?: string;
   onUnauthenticated?: () => void;
 }
 
 export class HealthcareMedplumClient extends MedplumClient {
   constructor(config: HealthcareMedplumClientConfig) {
-    const getAccessToken = config.getAccessToken;
-    const storeBaseUrl = config.storeBaseUrl;
+    const projectId = config.projectId;
     const onUnauthenticated = config.onUnauthenticated;
 
     super({
       baseUrl: globalThis.location?.origin ?? 'http://localhost:5173',
       fhirUrlPath: 'fhir',
       fetch: async (url: string | URL, init?: RequestInit) => {
-        const token = getAccessToken();
         const headers = new Headers(init?.headers);
-        if (token) {
-          headers.set('Authorization', `Bearer ${token}`);
+        if (projectId) {
+          headers.set('X-Project-Id', projectId);
         }
-        if (storeBaseUrl) {
-          headers.set('X-Store-Base', storeBaseUrl);
-        }
-        const response = await fetch(url, { ...init, headers });
+        const response = await fetch(url, { ...init, headers, credentials: 'include' });
         if (response.status === 401 && onUnauthenticated) {
           onUnauthenticated();
         }
