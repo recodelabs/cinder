@@ -58,18 +58,15 @@ export default defineConfig(({ mode }) => {
       },
     },
     server: {
+      host: '0.0.0.0',
       proxy: {
-        '/fhir': {
-          target: targetBase,
+        '/api': {
+          target: 'http://localhost:3000',
           changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/fhir/, '').replace(/_cursor=/g, '_page_token='),
-          router: (req) => {
-            const storeBase = req.headers['x-store-base'];
-            if (typeof storeBase === 'string') {
-              return `${storeBase}/fhir`;
-            }
-            return targetBase;
-          },
+        },
+        '/fhir': {
+          target: 'http://localhost:3000',
+          changeOrigin: true,
         },
       },
     },

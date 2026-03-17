@@ -34,7 +34,7 @@ const testRelatedPerson: RelatedPerson = {
 
 function renderWithProviders(ui: JSX.Element, medplumOverrides?: (m: HealthcareMedplumClient) => void): ReturnType<typeof render> {
   vi.stubGlobal('fetch', vi.fn());
-  const medplum = new HealthcareMedplumClient({ getAccessToken: () => 'test' });
+  const medplum = new HealthcareMedplumClient({});
   medplumOverrides?.(medplum);
   return render(
     <MantineProvider>

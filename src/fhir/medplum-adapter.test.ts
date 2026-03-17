@@ -17,26 +17,25 @@ describe('HealthcareMedplumClient', () => {
   });
 
   it('uses /fhir as the FHIR URL path', () => {
-    const client = new HealthcareMedplumClient({ getAccessToken: () => 'tok' });
+    const client = new HealthcareMedplumClient({});
     const url = client.fhirUrl('Patient', '123');
     expect(url.pathname).toBe('/fhir/Patient/123');
   });
 
   it('requestSchema loads schemas without network calls', async () => {
-    const client = new HealthcareMedplumClient({ getAccessToken: () => 'tok' });
+    const client = new HealthcareMedplumClient({});
     await client.requestSchema('Patient');
-    // Should load schemas via dynamic import, not via fetch
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
   it('requestProfileSchema is a no-op', async () => {
-    const client = new HealthcareMedplumClient({ getAccessToken: () => 'tok' });
+    const client = new HealthcareMedplumClient({});
     await client.requestProfileSchema('http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient');
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
   it('valueSetExpand resolves locally for known ValueSets', async () => {
-    const client = new HealthcareMedplumClient({ getAccessToken: () => 'tok' });
+    const client = new HealthcareMedplumClient({});
     const result = await client.valueSetExpand({ url: 'http://hl7.org/fhir/ValueSet/administrative-gender' });
     expect(result.resourceType).toBe('ValueSet');
     const codes = result.expansion?.contains?.map((c) => c.code);
@@ -45,46 +44,34 @@ describe('HealthcareMedplumClient', () => {
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
-  it('sends X-Store-Base header when storeBaseUrl is configured', async () => {
-    const client = new HealthcareMedplumClient({
-      getAccessToken: () => 'tok',
-      storeBaseUrl: 'https://healthcare.googleapis.com/v1/projects/p/locations/l/datasets/d/fhirStores/s',
-    });
+  it('sends X-Project-Id header when projectId is configured', async () => {
+    const client = new HealthcareMedplumClient({ projectId: 'proj-123' });
     await client.readResource('Patient', '123');
     expect(mockFetch).toHaveBeenCalled();
     const [, init] = mockFetch.mock.calls[0];
     const headers = new Headers(init?.headers);
-    expect(headers.get('X-Store-Base')).toBe(
-      'https://healthcare.googleapis.com/v1/projects/p/locations/l/datasets/d/fhirStores/s'
-    );
+    expect(headers.get('X-Project-Id')).toBe('proj-123');
   });
 
-  it('does not send X-Store-Base header when storeBaseUrl is not configured', async () => {
-    const client = new HealthcareMedplumClient({ getAccessToken: () => 'tok' });
+  it('does not send X-Project-Id header when projectId is not configured', async () => {
+    const client = new HealthcareMedplumClient({});
     await client.readResource('Patient', '123');
     expect(mockFetch).toHaveBeenCalled();
     const [, init] = mockFetch.mock.calls[0];
     const headers = new Headers(init?.headers);
-    expect(headers.get('X-Store-Base')).toBeNull();
+    expect(headers.get('X-Project-Id')).toBeNull();
   });
 
-  it('requests go to same origin when storeBaseUrl is configured', () => {
-    const client = new HealthcareMedplumClient({
-      getAccessToken: () => 'tok',
-      storeBaseUrl: 'https://healthcare.googleapis.com/v1/projects/p/locations/l/datasets/d/fhirStores/s',
-    });
+  it('requests go to same origin', () => {
+    const client = new HealthcareMedplumClient({ projectId: 'proj-123' });
     const url = client.fhirUrl('Patient', '123');
     expect(url.pathname).toBe('/fhir/Patient/123');
-    // Should NOT point to GCP directly — that would cause CORS
     expect(url.origin).not.toContain('googleapis.com');
   });
 
   it('calls onUnauthenticated when fetch returns 401', async () => {
     const onUnauthenticated = vi.fn();
-    const client = new HealthcareMedplumClient({
-      getAccessToken: () => 'expired-tok',
-      onUnauthenticated,
-    });
+    const client = new HealthcareMedplumClient({ onUnauthenticated });
     mockFetch.mockResolvedValue({
       ok: false,
       status: 401,
@@ -97,10 +84,7 @@ describe('HealthcareMedplumClient', () => {
 
   it('does not call onUnauthenticated for non-401 errors', async () => {
     const onUnauthenticated = vi.fn();
-    const client = new HealthcareMedplumClient({
-      getAccessToken: () => 'tok',
-      onUnauthenticated,
-    });
+    const client = new HealthcareMedplumClient({ onUnauthenticated });
     mockFetch.mockResolvedValue({
       ok: false,
       status: 404,
@@ -112,7 +96,7 @@ describe('HealthcareMedplumClient', () => {
   });
 
   it('createAttachment creates a Binary and returns Attachment with URL', async () => {
-    const client = new HealthcareMedplumClient({ getAccessToken: () => 'tok' });
+    const client = new HealthcareMedplumClient({});
     mockFetch.mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ resourceType: 'Binary', id: 'bin-456', contentType: 'image/jpeg' }),
@@ -130,7 +114,7 @@ describe('HealthcareMedplumClient', () => {
   });
 
   it('createAttachment works with deprecated positional args', async () => {
-    const client = new HealthcareMedplumClient({ getAccessToken: () => 'tok' });
+    const client = new HealthcareMedplumClient({});
     mockFetch.mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ resourceType: 'Binary', id: 'bin-789', contentType: 'image/png' }),
@@ -148,7 +132,7 @@ describe('HealthcareMedplumClient', () => {
   });
 
   it('valueSetExpand falls back to server for unknown ValueSets', async () => {
-    const client = new HealthcareMedplumClient({ getAccessToken: () => 'tok' });
+    const client = new HealthcareMedplumClient({});
     mockFetch.mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ resourceType: 'ValueSet', expansion: { contains: [] } }),

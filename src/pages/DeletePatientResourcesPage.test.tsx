@@ -13,7 +13,7 @@ import { DeletePatientResourcesPage } from './DeletePatientResourcesPage';
 function renderPage(
   medplumOverrides?: (medplum: HealthcareMedplumClient) => void
 ): { medplum: HealthcareMedplumClient } & ReturnType<typeof render> {
-  const medplum = new HealthcareMedplumClient({ getAccessToken: () => undefined });
+  const medplum = new HealthcareMedplumClient({});
   medplumOverrides?.(medplum);
   const result = render(
     <MantineProvider>

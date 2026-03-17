@@ -9,25 +9,39 @@ import { describe, expect, it, vi } from 'vitest';
 import { HealthcareMedplumClient } from './fhir/medplum-adapter';
 import { Shell } from './Shell';
 
-const medplum = new HealthcareMedplumClient({ getAccessToken: () => 'test' });
+const medplum = new HealthcareMedplumClient({});
 
 const mockSignOut = vi.fn();
 vi.mock('./auth/AuthProvider', () => ({
   useAuth: () => ({ isAuthenticated: true, signOut: mockSignOut }),
 }));
 
-interface RenderShellOptions {
-  route?: string;
-  onChangeStore?: () => void;
-}
+vi.mock('./contexts/OrgContext', () => ({
+  useOrg: () => ({
+    activeOrgId: null,
+    activeOrgSlug: null,
+    activeProject: null,
+    projects: [],
+    setActiveOrg: vi.fn(),
+    setActiveProject: vi.fn(),
+    refreshProjects: vi.fn(),
+  }),
+}));
 
-function renderShell(options: RenderShellOptions = {}): ReturnType<typeof render> {
-  const { route = '/', onChangeStore } = options;
+vi.mock('./components/OrgSwitcher', () => ({
+  OrgSwitcher: () => <div data-testid="org-switcher" />,
+}));
+
+vi.mock('./components/ProjectSwitcher', () => ({
+  ProjectSwitcher: () => <div data-testid="project-switcher" />,
+}));
+
+function renderShell(route = '/'): ReturnType<typeof render> {
   return render(
     <MantineProvider>
       <MedplumProvider medplum={medplum}>
         <MemoryRouter initialEntries={[route]}>
-          <Shell onChangeStore={onChangeStore} />
+          <Shell />
         </MemoryRouter>
       </MedplumProvider>
     </MantineProvider>
@@ -41,7 +55,7 @@ describe('Shell', () => {
   });
 
   it('shows resource type list on home page', () => {
-    renderShell({ route: '/' });
+    renderShell('/');
     expect(screen.getByText('Patient')).toBeDefined();
     expect(screen.getByText('Observation')).toBeDefined();
   });
@@ -62,39 +76,26 @@ describe('Shell', () => {
   });
 
   it('renders Cinder title as a link to home', () => {
-    renderShell({ route: '/Patient' });
+    renderShell('/Patient');
     const link = screen.getByRole('link', { name: /Cinder/i });
     expect(link.getAttribute('href')).toBe('/');
   });
 
-  it('renders sign-out button when onChangeStore is provided', () => {
-    renderShell({ onChangeStore: vi.fn() });
+  it('renders sign-out button', () => {
+    renderShell();
     expect(screen.getByRole('button', { name: /sign out/i })).toBeDefined();
   });
 
   it('calls signOut when sign-out button is clicked', async () => {
     const user = userEvent.setup();
-    renderShell({ onChangeStore: vi.fn() });
+    renderShell();
     await user.click(screen.getByRole('button', { name: /sign out/i }));
     expect(mockSignOut).toHaveBeenCalled();
   });
 
-  it('renders change-store button when onChangeStore is provided', () => {
-    renderShell({ onChangeStore: vi.fn() });
-    expect(screen.getByRole('button', { name: /change store/i })).toBeDefined();
-  });
-
-  it('calls onChangeStore when change-store button is clicked', async () => {
-    const user = userEvent.setup();
-    const onChangeStore = vi.fn();
-    renderShell({ onChangeStore });
-    await user.click(screen.getByRole('button', { name: /change store/i }));
-    expect(onChangeStore).toHaveBeenCalled();
-  });
-
-  it('hides auth buttons when onChangeStore is not provided', () => {
+  it('renders org and project switchers', () => {
     renderShell();
-    expect(screen.queryByRole('button', { name: /sign out/i })).toBeNull();
-    expect(screen.queryByRole('button', { name: /change store/i })).toBeNull();
+    expect(screen.getByTestId('org-switcher')).toBeDefined();
+    expect(screen.getByTestId('project-switcher')).toBeDefined();
   });
 });

@@ -19,7 +19,7 @@ const mockBundle: Bundle<Patient> = {
 };
 
 function renderTypePage(path = '/Patient'): ReturnType<typeof render> {
-  const medplum = new HealthcareMedplumClient({ getAccessToken: () => 'test' });
+  const medplum = new HealthcareMedplumClient({});
   vi.spyOn(medplum, 'search').mockResolvedValue(mockBundle as any);
 
   return render(
@@ -60,7 +60,7 @@ describe('ResourceTypePage', () => {
       ],
     };
 
-    const medplum = new HealthcareMedplumClient({ getAccessToken: () => 'test' });
+    const medplum = new HealthcareMedplumClient({});
     vi.spyOn(medplum, 'search').mockResolvedValue(bundleWithNext as any);
 
     render(

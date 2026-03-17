@@ -17,6 +17,9 @@ export function SignInPage(): JSX.Element {
         </Group>
         <Text size="lg" c="dimmed">FHIR Browser</Text>
         <Button size="lg" onClick={signIn}>Sign in with Google</Button>
+        <Text size="sm" c="dimmed" maw={300} ta="center">
+          Sign in with your Google account. No GCP access required — your organization provides FHIR store access.
+        </Text>
       </Stack>
     </Center>
   );

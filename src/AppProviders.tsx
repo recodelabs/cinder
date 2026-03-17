@@ -8,26 +8,20 @@ import type { JSX, ReactNode } from 'react';
 import { useMemo } from 'react';
 import { BrowserRouter, useNavigate } from 'react-router';
 import { AuthProvider, useAuth } from './auth/AuthProvider';
-import type { StoreConfig } from './config/StoreConfig';
-import { storeBaseUrl } from './config/StoreConfig';
+import { OrgProvider, useOrg } from './contexts/OrgContext';
 import { HealthcareMedplumClient } from './fhir/medplum-adapter';
 
-interface FhirProviderProps {
-  readonly storeConfig?: StoreConfig;
-  readonly children: ReactNode;
-}
-
-export function FhirProvider({ storeConfig, children }: FhirProviderProps): JSX.Element {
-  const { accessToken, signOut } = useAuth();
+export function FhirProvider({ children }: { readonly children: ReactNode }): JSX.Element {
+  const { signOut } = useAuth();
+  const { activeProject } = useOrg();
   const navigate = useNavigate();
 
   const medplum = useMemo(() => {
     return new HealthcareMedplumClient({
-      getAccessToken: () => accessToken,
-      storeBaseUrl: storeConfig ? storeBaseUrl(storeConfig) : undefined,
+      projectId: activeProject?.id,
       onUnauthenticated: signOut,
     });
-  }, [accessToken, storeConfig, signOut]);
+  }, [activeProject?.id, signOut]);
 
   return (
     <MedplumProvider medplum={medplum} navigate={navigate}>
@@ -45,7 +39,9 @@ export function AppProviders({ children }: AppProvidersProps): JSX.Element {
     <MantineProvider>
       <AuthProvider>
         <BrowserRouter>
-          {children}
+          <OrgProvider>
+            {children}
+          </OrgProvider>
         </BrowserRouter>
       </AuthProvider>
     </MantineProvider>
