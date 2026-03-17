@@ -5,7 +5,6 @@ import {
   Badge,
   Button,
   Card,
-  FileInput,
   Group,
   Stack,
   Table,
@@ -16,7 +15,7 @@ import {
 } from '@mantine/core';
 import { IconCheck, IconTrash, IconUpload } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { authClient } from '../auth/auth-client';
 import { useOrg } from '../contexts/OrgContext';
 
@@ -178,6 +177,8 @@ function CredentialsTab({ orgId }: TabProps): JSX.Element {
   const [configured, setConfigured] = useState<boolean | null>(null);
   const [message, setMessage] = useState('');
   const [messageColor, setMessageColor] = useState<'green' | 'red'>('green');
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     void (async () => {
@@ -195,9 +196,11 @@ function CredentialsTab({ orgId }: TabProps): JSX.Element {
     })();
   }, [orgId]);
 
-  const handleUpload = async (file: File | null): Promise<void> => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
+    const file = e.target.files?.[0];
     if (!file) return;
     setMessage('');
+    setUploading(true);
     try {
       const text = await file.text();
       const response = await fetch(`/api/orgs/${orgId}/credential`, {
@@ -218,6 +221,9 @@ function CredentialsTab({ orgId }: TabProps): JSX.Element {
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Failed to upload credentials');
       setMessageColor('red');
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -237,13 +243,20 @@ function CredentialsTab({ orgId }: TabProps): JSX.Element {
           )}
         </Group>
       </Card>
-      <FileInput
-        label="Upload Service Account JSON"
-        placeholder="Choose .json file"
+      <input
+        ref={fileInputRef}
+        type="file"
         accept=".json"
-        leftSection={<IconUpload size={16} />}
-        onChange={handleUpload}
+        style={{ display: 'none' }}
+        onChange={handleFileChange}
       />
+      <Button
+        leftSection={<IconUpload size={16} />}
+        onClick={() => fileInputRef.current?.click()}
+        loading={uploading}
+      >
+        Upload Service Account JSON
+      </Button>
       {message && (
         <Text size="sm" c={messageColor}>
           {message}
