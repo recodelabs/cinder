@@ -75,8 +75,6 @@ export function Shell(): JSX.Element {
         <Group h="100%" px="md">
           <Anchor component={Link} to="/" underline="never" c="inherit"><Group gap={8} wrap="nowrap"><CinderLogo /><Title order={3}>Cinder</Title></Group></Anchor>
           <Text size="sm" c="dimmed">FHIR Browser</Text>
-          <OrgSwitcher />
-          <ProjectSwitcher />
           <TextInput
             placeholder="Search..."
             leftSection={<IconSearch size={16} />}
@@ -87,6 +85,8 @@ export function Shell(): JSX.Element {
             readOnly
           />
           <Group gap="xs" ml="auto">
+            <OrgSwitcher />
+            <ProjectSwitcher />
             <Button variant="subtle" size="compact-sm" onClick={signOut}>Sign Out</Button>
           </Group>
         </Group>
