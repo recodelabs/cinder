@@ -8,6 +8,7 @@ import { AppProviders, FhirProvider } from './AppProviders';
 import { useAuth } from './auth/AuthProvider';
 import { useOrg } from './contexts/OrgContext';
 import { Shell } from './Shell';
+import { OrgShell } from './OrgShell';
 import { HomePage } from './pages/HomePage';
 import { ResourceTypePage } from './pages/ResourceTypePage';
 import { ResourceDetailPage } from './pages/ResourceDetailPage';
@@ -60,10 +61,12 @@ function AppContent(): JSX.Element {
   return (
     <Routes>
       <Route path="/sign-in" element={<Navigate to="/" />} />
-      <Route path="/orgs/new" element={<CreateOrgPage />} />
-      <Route path="/orgs/:orgSlug/settings" element={<OrgSettingsPage />} />
-      <Route path="/orgs/:orgSlug/projects" element={<ProjectsPage />} />
-      <Route path="/orgs/:orgSlug/projects/new" element={<CreateProjectPage />} />
+      <Route element={<OrgShell />}>
+        <Route path="/orgs/new" element={<CreateOrgPage />} />
+        <Route path="/orgs/:orgSlug/settings" element={<OrgSettingsPage />} />
+        <Route path="/orgs/:orgSlug/projects" element={<ProjectsPage />} />
+        <Route path="/orgs/:orgSlug/projects/new" element={<CreateProjectPage />} />
+      </Route>
       <Route element={<FhirProvider><Shell /></FhirProvider>}>
         <Route path="/orgs/:orgSlug/projects/:projectSlug" element={<HomePage />} />
         <Route path="/orgs/:orgSlug/projects/:projectSlug/:resourceType" element={<ResourceTypePage />} />

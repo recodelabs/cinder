@@ -154,6 +154,13 @@ export function createServer(options: ServerOptions = {}) {
       // Org deletion (with token cache cleanup)
       if (url.pathname.match(/^\/api\/orgs\/[\w-]+$/) && req.method === 'DELETE') {
         const orgId = url.pathname.split('/')[3]!;
+        const { requireOrgOwner } = await import('./server/middleware');
+        try {
+          await requireOrgOwner(req, orgId);
+        } catch (err) {
+          if (err instanceof Response) return withSecurityHeaders(err);
+          throw err;
+        }
         const { tokenCache } = await import('./server/routes/shared');
         tokenCache.evict(orgId);
         // Delegate to Better Auth for the actual org deletion

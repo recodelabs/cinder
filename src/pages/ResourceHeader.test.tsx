@@ -22,7 +22,7 @@ beforeEach(() => {
   vi.stubGlobal('fetch', mockFetch);
 });
 
-const medplum = new HealthcareMedplumClient({ getAccessToken: () => 'test' });
+const medplum = new HealthcareMedplumClient({});
 
 function renderHeader(resource: Resource): ReturnType<typeof render> {
   return render(

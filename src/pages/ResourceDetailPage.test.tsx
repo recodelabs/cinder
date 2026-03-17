@@ -20,7 +20,7 @@ function renderDetailPage(
   path = '/Patient/test-1',
   medplumOverrides?: (medplum: HealthcareMedplumClient) => void
 ): { medplum: HealthcareMedplumClient } & ReturnType<typeof render> {
-  const medplum = new HealthcareMedplumClient({ getAccessToken: () => 'test' });
+  const medplum = new HealthcareMedplumClient({});
   vi.spyOn(medplum, 'readResource').mockResolvedValue(testPatient as any);
   medplumOverrides?.(medplum);
 

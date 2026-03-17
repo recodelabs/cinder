@@ -81,12 +81,16 @@ function MembersTab({ orgId }: TabProps): JSX.Element {
     setError('');
     setLoading(true);
     try {
-      await fetch(`/api/orgs/${orgId}/members`, {
+      const response = await fetch(`/api/orgs/${orgId}/members`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ email }),
       });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error((body as { error?: string }).error ?? 'Failed to add member');
+      }
       setEmail('');
       await loadMembers();
     } catch (err) {
@@ -98,13 +102,18 @@ function MembersTab({ orgId }: TabProps): JSX.Element {
 
   const handleRemoveMember = async (userId: string): Promise<void> => {
     try {
-      await fetch(`/api/orgs/${orgId}/members/${userId}`, {
+      const response = await fetch(`/api/orgs/${orgId}/members/${userId}`, {
         method: 'DELETE',
         credentials: 'include',
       });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        setError((body as { error?: string }).error ?? 'Failed to remove member');
+        return;
+      }
       await loadMembers();
-    } catch {
-      // ignore
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to remove member');
     }
   };
 
@@ -199,7 +208,8 @@ function CredentialsTab({ orgId }: TabProps): JSX.Element {
         setMessageColor('green');
         setConfigured(true);
       } else {
-        setMessage('Failed to save credentials');
+        const body = await response.json().catch(() => ({}));
+        setMessage((body as { error?: string }).error ?? 'Failed to save credentials');
         setMessageColor('red');
       }
     } catch (err) {

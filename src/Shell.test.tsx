@@ -9,7 +9,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { HealthcareMedplumClient } from './fhir/medplum-adapter';
 import { Shell } from './Shell';
 
-const medplum = new HealthcareMedplumClient({ getAccessToken: () => 'test' });
+const medplum = new HealthcareMedplumClient({});
 
 const mockSignOut = vi.fn();
 vi.mock('./auth/AuthProvider', () => ({

@@ -16,7 +16,7 @@ function renderRelationships(
   patientId: string,
   medplumOverrides?: (medplum: HealthcareMedplumClient) => void
 ): { medplum: HealthcareMedplumClient } & ReturnType<typeof render> {
-  const medplum = new HealthcareMedplumClient({ getAccessToken: () => 'test' });
+  const medplum = new HealthcareMedplumClient({});
   medplumOverrides?.(medplum);
 
   const result = render(
