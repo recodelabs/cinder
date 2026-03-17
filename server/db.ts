@@ -12,6 +12,8 @@ if (!connectionString) {
 
 const client = postgres(connectionString);
 export const db = drizzle(client, { schema });
+// Schema-less instance for Better Auth — it manages its own tables
+export const authDb = drizzle(client);
 
 export async function ensureTables() {
   await db.execute(sql`
