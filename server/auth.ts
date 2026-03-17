@@ -5,9 +5,10 @@ import { betterAuth } from 'better-auth';
 import { organization } from 'better-auth/plugins';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { authDb } from './db';
+import * as authSchema from './auth-schema';
 
 export const auth = betterAuth({
-  database: drizzleAdapter(authDb, { provider: 'pg' }),
+  database: drizzleAdapter(authDb, { provider: 'pg', schema: authSchema }),
   baseURL: process.env.BETTER_AUTH_URL ?? 'http://localhost:3000',
   secret: process.env.BETTER_AUTH_SECRET,
   socialProviders: {
