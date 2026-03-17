@@ -243,20 +243,22 @@ function CredentialsTab({ orgId }: TabProps): JSX.Element {
           )}
         </Group>
       </Card>
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".json"
-        style={{ display: 'none' }}
-        onChange={handleFileChange}
-      />
-      <Button
-        leftSection={<IconUpload size={16} />}
-        onClick={() => fileInputRef.current?.click()}
-        loading={uploading}
-      >
-        Upload Service Account JSON
-      </Button>
+      <label style={{ display: 'inline-block' }}>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json"
+          style={{ display: 'none' }}
+          onChange={handleFileChange}
+        />
+        <Button
+          component="span"
+          leftSection={<IconUpload size={16} />}
+          loading={uploading}
+        >
+          Upload Service Account JSON
+        </Button>
+      </label>
       {message && (
         <Text size="sm" c={messageColor}>
           {message}
