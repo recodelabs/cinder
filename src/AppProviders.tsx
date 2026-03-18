@@ -16,12 +16,18 @@ export function FhirProvider({ children }: { readonly children: ReactNode }): JS
   const { activeProject } = useOrg();
   const navigate = useNavigate();
 
+  const { activeOrgSlug } = useOrg();
+
   const medplum = useMemo(() => {
     return new HealthcareMedplumClient({
       projectId: activeProject?.id,
       onUnauthenticated: signOut,
+      onNoProject: () => {
+        const dest = activeOrgSlug ? `/orgs/${activeOrgSlug}/projects` : '/orgs/new';
+        navigate(dest);
+      },
     });
-  }, [activeProject?.id, signOut]);
+  }, [activeProject?.id, activeOrgSlug, signOut, navigate]);
 
   return (
     <MedplumProvider medplum={medplum} navigate={navigate}>

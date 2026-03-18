@@ -9,21 +9,28 @@ import { expandValueSet } from './valuesets';
 export interface HealthcareMedplumClientConfig {
   projectId?: string;
   onUnauthenticated?: () => void;
+  onNoProject?: () => void;
 }
 
 export class HealthcareMedplumClient extends MedplumClient {
   constructor(config: HealthcareMedplumClientConfig) {
     const projectId = config.projectId;
     const onUnauthenticated = config.onUnauthenticated;
+    const onNoProject = config.onNoProject;
 
     super({
       baseUrl: globalThis.location?.origin ?? 'http://localhost:5173',
       fhirUrlPath: 'fhir',
       fetch: async (url: string | URL, init?: RequestInit) => {
-        const headers = new Headers(init?.headers);
-        if (projectId) {
-          headers.set('X-Project-Id', projectId);
+        if (!projectId) {
+          if (onNoProject) onNoProject();
+          return new Response(JSON.stringify({ error: 'No project selected' }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' },
+          });
         }
+        const headers = new Headers(init?.headers);
+        headers.set('X-Project-Id', projectId);
         const response = await fetch(url, { ...init, headers, credentials: 'include' });
         if (response.status === 401 && onUnauthenticated) {
           onUnauthenticated();

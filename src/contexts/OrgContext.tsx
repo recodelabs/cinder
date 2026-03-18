@@ -91,6 +91,14 @@ export function OrgProvider({ children }: OrgProviderProps): JSX.Element {
     refreshProjects();
   }, [refreshProjects]);
 
+  // Auto-select first project if none is active
+  useEffect(() => {
+    if (!activeProject && projects.length > 0) {
+      setActiveProjectState(projects[0]);
+      localStorage.setItem(ACTIVE_PROJECT_KEY, JSON.stringify(projects[0]));
+    }
+  }, [activeProject, projects]);
+
   const setActiveOrg = useCallback((orgId: string) => {
     setActiveOrgIdState(orgId);
     localStorage.setItem(ACTIVE_ORG_KEY, orgId);
