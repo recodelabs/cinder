@@ -139,6 +139,11 @@ export function createServer(options: ServerOptions = {}) {
       }
 
       // Member routes
+      if (url.pathname.match(/^\/api\/orgs\/[\w-]+\/members$/) && req.method === 'GET') {
+        const orgId = url.pathname.split('/')[3]!;
+        const { handleListMembers } = await import('./server/routes/members');
+        return withSecurityHeaders(await handleListMembers(req, orgId));
+      }
       if (url.pathname.match(/^\/api\/orgs\/[\w-]+\/members$/) && req.method === 'POST') {
         const orgId = url.pathname.split('/')[3]!;
         const { handleDirectAddMember } = await import('./server/routes/members');

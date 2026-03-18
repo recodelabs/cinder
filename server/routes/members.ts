@@ -11,6 +11,33 @@ const addMemberSchema = z.object({
   role: z.enum(['member', 'owner']).default('member'),
 });
 
+export async function handleListMembers(
+  req: Request,
+  orgId: string,
+): Promise<Response> {
+  try {
+    await (await import('../middleware')).requireOrgMember(req, orgId);
+  } catch (err) {
+    if (err instanceof Response) return err;
+    throw err;
+  }
+
+  const members = await db.execute<{ user_id: string; role: string; email: string; name: string }>(sql`
+    SELECT m.user_id, m.role, u.email, u.name
+    FROM "member" m JOIN "user" u ON u.id = m.user_id
+    WHERE m.organization_id = ${orgId}
+    ORDER BY m.created_at
+  `);
+
+  const invitations = await db.execute<{ id: string; email: string; role: string | null; status: string }>(sql`
+    SELECT id, email, role, status FROM "invitation"
+    WHERE organization_id = ${orgId} AND status = 'pending'
+    ORDER BY created_at
+  `);
+
+  return Response.json({ members, invitations });
+}
+
 export async function handleDirectAddMember(
   req: Request,
   orgId: string,

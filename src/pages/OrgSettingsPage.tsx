@@ -17,16 +17,14 @@ import {
 import { IconCheck, IconTrash, IconUpload } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
-import { authClient } from '../auth/auth-client';
+
 import { useOrg } from '../contexts/OrgContext';
 
 interface Member {
-  readonly userId: string;
+  readonly user_id: string;
   readonly role: string;
-  readonly user?: {
-    readonly email: string;
-    readonly name: string;
-  };
+  readonly email: string;
+  readonly name: string;
 }
 
 interface Invitation {
@@ -74,12 +72,12 @@ function MembersTab({ orgId }: TabProps): JSX.Element {
 
   const loadMembers = useCallback(async () => {
     try {
-      const result = await authClient.organization.getFullOrganization({
-        query: { organizationId: orgId },
-      });
-      const data = result.data as { members?: readonly Member[]; invitations?: readonly Invitation[] } | null;
-      setMembers(data?.members ?? []);
-      setInvitations((data?.invitations ?? []).filter((i) => i.status === 'pending'));
+      const response = await fetch(`/api/orgs/${orgId}/members`, { credentials: 'include' });
+      if (response.ok) {
+        const data = await response.json() as { members: readonly Member[]; invitations: readonly Invitation[] };
+        setMembers(data.members);
+        setInvitations(data.invitations);
+      }
     } catch {
       setMembers([]);
       setInvitations([]);
@@ -152,25 +150,25 @@ function MembersTab({ orgId }: TabProps): JSX.Element {
         <Table.Thead>
           <Table.Tr>
             <Table.Th>Email</Table.Th>
+            <Table.Th>Role</Table.Th>
             <Table.Th>Status</Table.Th>
             <Table.Th />
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
           {members.map((member) => (
-            <Table.Tr key={member.userId}>
-              <Table.Td>{member.user?.email ?? 'Unknown'}</Table.Td>
+            <Table.Tr key={member.user_id}>
+              <Table.Td>{member.email}</Table.Td>
+              <Table.Td>{member.role}</Table.Td>
               <Table.Td>
-                <Badge size="sm" variant="light">
-                  {member.role}
-                </Badge>
+                <Badge size="sm" variant="light" color="green">Active</Badge>
               </Table.Td>
               <Table.Td>
                 {member.role !== 'owner' && (
                   <ActionIcon
                     variant="subtle"
                     color="red"
-                    onClick={() => handleRemoveMember(member.userId)}
+                    onClick={() => handleRemoveMember(member.user_id)}
                   >
                     <IconTrash size={16} />
                   </ActionIcon>
@@ -181,10 +179,9 @@ function MembersTab({ orgId }: TabProps): JSX.Element {
           {invitations.map((inv) => (
             <Table.Tr key={inv.id}>
               <Table.Td>{inv.email}</Table.Td>
+              <Table.Td>{inv.role ?? 'member'}</Table.Td>
               <Table.Td>
-                <Badge size="sm" variant="light" color="yellow">
-                  Invited
-                </Badge>
+                <Badge size="sm" variant="light" color="yellow">Invited</Badge>
               </Table.Td>
               <Table.Td />
             </Table.Tr>
