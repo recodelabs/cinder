@@ -15,11 +15,10 @@ import { CinderLogo } from './CinderLogo';
 import { OrgSwitcher } from './components/OrgSwitcher';
 import { ProjectSwitcher } from './components/ProjectSwitcher';
 import { RESOURCE_TYPES } from './constants';
-import { useOrg } from './contexts/OrgContext';
+
 
 export function Shell(): JSX.Element {
   const { signOut } = useAuth();
-  const { activeOrgSlug, activeProject } = useOrg();
   const medplum = useMedplum();
   const navigate = useNavigate();
   const location = useLocation();
@@ -28,10 +27,6 @@ export function Shell(): JSX.Element {
   const [sidebarFilter, setSidebarFilter] = useState('');
   const [resourcesOpen, setResourcesOpen] = useState(true);
   const [adminOpen, setAdminOpen] = useState(false);
-
-  const basePath = activeOrgSlug && activeProject?.slug
-    ? `/orgs/${activeOrgSlug}/projects/${activeProject.slug}`
-    : '';
 
   const activeResourceType = location.pathname.split('/').pop() || '';
 
@@ -99,7 +94,7 @@ export function Shell(): JSX.Element {
             results.map((r) => (
               <Spotlight.Action
                 key={r.id}
-                onClick={() => navigate(`${basePath}/${r.resourceType}/${r.id}`)}
+                onClick={() => navigate(`/${r.resourceType}/${r.id}`)}
               >
                 <Stack gap={0}>
                   <Text size="sm" fw={500}>{getDisplayString(r)}</Text>
@@ -135,7 +130,7 @@ export function Shell(): JSX.Element {
             <NavLink
               key={type}
               component={Link}
-              to={`${basePath}/${type}`}
+              to={`/${type}`}
               label={type}
               active={activeResourceType === type}
             />
@@ -150,14 +145,14 @@ export function Shell(): JSX.Element {
         <Collapse in={adminOpen}>
           <NavLink
             component={Link}
-            to={`${basePath}/bulk-load`}
+            to={`/bulk-load`}
             label="Bulk Load"
             leftSection={<IconUpload size={16} />}
             active={activeResourceType === 'bulk-load'}
           />
           <NavLink
             component={Link}
-            to={`${basePath}/delete-patient-resources`}
+            to={`/delete-patient-resources`}
             label="Delete Patient Resources"
             leftSection={<IconTrash size={16} />}
             active={activeResourceType === 'delete-patient-resources'}

@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { Navigate, Route, Routes } from 'react-router';
 import { AppProviders, FhirProvider } from './AppProviders';
 import { useAuth } from './auth/AuthProvider';
-import { useOrg } from './contexts/OrgContext';
+
 import { Shell } from './Shell';
 import { OrgShell } from './OrgShell';
 import { HomePage } from './pages/HomePage';
@@ -21,17 +21,6 @@ import { OrgSettingsPage } from './pages/OrgSettingsPage';
 import { ProjectsPage } from './pages/ProjectsPage';
 import { CreateProjectPage } from './pages/CreateProjectPage';
 import { loadSchemas } from './schemas';
-
-function OrgRedirect(): JSX.Element {
-  const { activeOrgSlug, activeProject } = useOrg();
-  if (activeOrgSlug && activeProject) {
-    return <Navigate to={`/orgs/${activeOrgSlug}/projects/${activeProject.slug}`} />;
-  }
-  if (activeOrgSlug) {
-    return <Navigate to={`/orgs/${activeOrgSlug}/projects`} />;
-  }
-  return <Navigate to="/orgs/new" />;
-}
 
 function AppContent(): JSX.Element {
   const { session } = useAuth();
@@ -68,15 +57,14 @@ function AppContent(): JSX.Element {
         <Route path="/orgs/:orgSlug/projects/new" element={<CreateProjectPage />} />
       </Route>
       <Route element={<FhirProvider><Shell /></FhirProvider>}>
-        <Route path="/orgs/:orgSlug/projects/:projectSlug" element={<HomePage />} />
-        <Route path="/orgs/:orgSlug/projects/:projectSlug/:resourceType" element={<ResourceTypePage />} />
-        <Route path="/orgs/:orgSlug/projects/:projectSlug/:resourceType/new" element={<ResourceCreateRoutePage />} />
-        <Route path="/orgs/:orgSlug/projects/:projectSlug/:resourceType/:id" element={<ResourceDetailPage />} />
-        <Route path="/orgs/:orgSlug/projects/:projectSlug/:resourceType/:id/:tab" element={<ResourceDetailPage />} />
-        <Route path="/orgs/:orgSlug/projects/:projectSlug/bulk-load" element={<BulkLoadPage />} />
-        <Route path="/orgs/:orgSlug/projects/:projectSlug/delete-patient-resources" element={<DeletePatientResourcesPage />} />
+        <Route path="/" element={<HomePage />} />
+        <Route path="/:resourceType" element={<ResourceTypePage />} />
+        <Route path="/:resourceType/new" element={<ResourceCreateRoutePage />} />
+        <Route path="/:resourceType/:id" element={<ResourceDetailPage />} />
+        <Route path="/:resourceType/:id/:tab" element={<ResourceDetailPage />} />
+        <Route path="/bulk-load" element={<BulkLoadPage />} />
+        <Route path="/delete-patient-resources" element={<DeletePatientResourcesPage />} />
       </Route>
-      <Route path="/" element={<OrgRedirect />} />
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );
