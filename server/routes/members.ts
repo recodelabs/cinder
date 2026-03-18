@@ -43,31 +43,45 @@ export async function handleDirectAddMember(
   const users = await db.execute<{ id: string }>(
     sql`SELECT id FROM "user" WHERE email = ${email} LIMIT 1`
   );
-  if (!users[0]) {
-    return Response.json(
-      { error: 'User not found — they need to sign in to Cinder first' },
-      { status: 404 },
+
+  if (users[0]) {
+    const userId = users[0].id;
+
+    // Check if already a member
+    const existing = await db.execute<{ id: string }>(
+      sql`SELECT id FROM "member" WHERE organization_id = ${orgId} AND user_id = ${userId} LIMIT 1`
     );
+    if (existing[0]) {
+      return Response.json({ error: 'User is already a member' }, { status: 409 });
+    }
+
+    // Add directly as member
+    const memberId = crypto.randomUUID();
+    await db.execute(sql`
+      INSERT INTO "member" (id, organization_id, user_id, role, created_at)
+      VALUES (${memberId}, ${orgId}, ${userId}, ${role}, NOW())
+    `);
+
+    return Response.json({ id: memberId, userId, role }, { status: 201 });
   }
 
-  const userId = users[0].id;
-
-  // Check if already a member
-  const existing = await db.execute<{ id: string }>(
-    sql`SELECT id FROM "member" WHERE organization_id = ${orgId} AND user_id = ${userId} LIMIT 1`
+  // User doesn't exist yet — create a pending invitation
+  const existingInvite = await db.execute<{ id: string }>(
+    sql`SELECT id FROM "invitation" WHERE organization_id = ${orgId} AND email = ${email} AND status = 'pending' LIMIT 1`
   );
-  if (existing[0]) {
-    return Response.json({ error: 'User is already a member' }, { status: 409 });
+  if (existingInvite[0]) {
+    return Response.json({ error: 'An invitation is already pending for this email' }, { status: 409 });
   }
 
-  // Add directly as member
-  const memberId = crypto.randomUUID();
+  const session = await (await import('../middleware')).getSession(req);
+  const inviteId = crypto.randomUUID();
   await db.execute(sql`
-    INSERT INTO "member" (id, organization_id, user_id, role, created_at)
-    VALUES (${memberId}, ${orgId}, ${userId}, ${role}, NOW())
+    INSERT INTO "invitation" (id, organization_id, email, role, status, expires_at, inviter_id, created_at)
+    VALUES (${inviteId}, ${orgId}, ${email}, ${role}, 'pending',
+            NOW() + INTERVAL '30 days', ${session!.userId}, NOW())
   `);
 
-  return Response.json({ id: memberId, userId, role }, { status: 201 });
+  return Response.json({ id: inviteId, email, role, status: 'pending' }, { status: 201 });
 }
 
 export async function handleRemoveMember(
@@ -83,10 +97,9 @@ export async function handleRemoveMember(
   }
 
   try {
-    await auth.api.removeMember({
-      body: { organizationId: orgId, memberIdOrUserId: userId },
-      headers: req.headers,
-    });
+    await db.execute(sql`
+      DELETE FROM "member" WHERE organization_id = ${orgId} AND user_id = ${userId}
+    `);
     return new Response(null, { status: 204 });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to remove member';

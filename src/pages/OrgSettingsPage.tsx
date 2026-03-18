@@ -29,6 +29,13 @@ interface Member {
   };
 }
 
+interface Invitation {
+  readonly id: string;
+  readonly email: string;
+  readonly role: string | null;
+  readonly status: string;
+}
+
 export function OrgSettingsPage(): JSX.Element {
   const { activeOrgId, activeOrgAuthMode } = useOrg();
   const isServiceAccount = activeOrgAuthMode === 'service_account';
@@ -61,6 +68,7 @@ interface TabProps {
 function MembersTab({ orgId }: TabProps): JSX.Element {
   const [email, setEmail] = useState('');
   const [members, setMembers] = useState<readonly Member[]>([]);
+  const [invitations, setInvitations] = useState<readonly Invitation[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -69,10 +77,12 @@ function MembersTab({ orgId }: TabProps): JSX.Element {
       const result = await authClient.organization.getFullOrganization({
         query: { organizationId: orgId },
       });
-      const data = result.data as { members?: readonly Member[] } | null;
+      const data = result.data as { members?: readonly Member[]; invitations?: readonly Invitation[] } | null;
       setMembers(data?.members ?? []);
+      setInvitations((data?.invitations ?? []).filter((i) => i.status === 'pending'));
     } catch {
       setMembers([]);
+      setInvitations([]);
     }
   }, [orgId]);
 
@@ -142,14 +152,14 @@ function MembersTab({ orgId }: TabProps): JSX.Element {
         <Table.Thead>
           <Table.Tr>
             <Table.Th>Email</Table.Th>
-            <Table.Th>Role</Table.Th>
+            <Table.Th>Status</Table.Th>
             <Table.Th />
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
           {members.map((member) => (
             <Table.Tr key={member.userId}>
-              <Table.Td>{member.user?.email ?? 'Pending'}</Table.Td>
+              <Table.Td>{member.user?.email ?? 'Unknown'}</Table.Td>
               <Table.Td>
                 <Badge size="sm" variant="light">
                   {member.role}
@@ -166,6 +176,17 @@ function MembersTab({ orgId }: TabProps): JSX.Element {
                   </ActionIcon>
                 )}
               </Table.Td>
+            </Table.Tr>
+          ))}
+          {invitations.map((inv) => (
+            <Table.Tr key={inv.id}>
+              <Table.Td>{inv.email}</Table.Td>
+              <Table.Td>
+                <Badge size="sm" variant="light" color="yellow">
+                  Invited
+                </Badge>
+              </Table.Td>
+              <Table.Td />
             </Table.Tr>
           ))}
         </Table.Tbody>
