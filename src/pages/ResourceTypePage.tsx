@@ -34,11 +34,16 @@ export function ResourceTypePage(): JSX.Element {
   const search: SearchRequest = useMemo(() => {
     const parsed = parseSearchRequest(resourceType + location.search);
     const defaults = getDefaultSearch(resourceType ?? '');
-    return {
+    const merged = {
       ...defaults,
       ...parsed,
       resourceType: (resourceType ?? '') as ResourceType,
     };
+    // Remove filters with null/undefined values — SearchControl crashes on them
+    if (merged.filters) {
+      merged.filters = merged.filters.filter((f) => f.value != null && f.value !== '');
+    }
+    return merged;
   }, [resourceType, location.search]);
 
   const currentPage = getPageNumber(search);
