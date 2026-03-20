@@ -5,10 +5,11 @@ import type { SearchRequest } from '@medplum/core';
 import type { ResourceType } from '@medplum/fhirtypes';
 import type { SearchChangeEvent, SearchLoadEvent } from '@medplum/react';
 import { SearchControl } from '@medplum/react';
-import { Stack, Title } from '@mantine/core';
+import { Group, Stack, Title } from '@mantine/core';
 import type { JSX } from 'react';
 import { useCallback, useMemo, useRef } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
+import { ColumnConfig } from './ColumnConfig';
 import { getDefaultSearch } from './search-defaults';
 import { SearchFilterBar } from './SearchFilterBar';
 
@@ -88,9 +89,21 @@ export function ResourceTypePage(): JSX.Element {
     [currentPage, navigate, resourceType]
   );
 
+  const handleFieldsChange = useCallback(
+    (newFields: string[]) => {
+      const params = new URLSearchParams(location.search);
+      params.set('_fields', newFields.join(','));
+      navigate(`/${resourceType}?${params.toString()}`);
+    },
+    [location.search, navigate, resourceType],
+  );
+
   return (
     <Stack gap={0}>
-      <Title order={3} px="sm" pt="sm">{resourceType}</Title>
+      <Group justify="space-between" px="sm" pt="sm">
+        <Title order={3}>{resourceType}</Title>
+        <ColumnConfig fields={search.fields ?? []} onChange={handleFieldsChange} />
+      </Group>
       <SearchFilterBar resourceType={resourceType ?? ''} />
       <SearchControl
         key={resourceType}
