@@ -20,6 +20,8 @@ import { CreateOrgPage } from './pages/CreateOrgPage';
 import { OrgSettingsPage } from './pages/OrgSettingsPage';
 import { ProjectsPage } from './pages/ProjectsPage';
 import { CreateProjectPage } from './pages/CreateProjectPage';
+import { CapturePage } from './pages/CapturePage';
+import { CaptureFillPage } from './pages/CaptureFillPage';
 import { loadSchemas } from './schemas';
 
 function AppContent(): JSX.Element {
@@ -62,6 +64,8 @@ function AppContent(): JSX.Element {
         <Route path="/:resourceType/new" element={<ResourceCreateRoutePage />} />
         <Route path="/:resourceType/:id" element={<ResourceDetailPage />} />
         <Route path="/:resourceType/:id/:tab" element={<ResourceDetailPage />} />
+        <Route path="/capture" element={<CapturePage />} />
+        <Route path="/capture/:id" element={<CaptureFillPage />} />
         <Route path="/bulk-load" element={<BulkLoadPage />} />
         <Route path="/delete-patient-resources" element={<DeletePatientResourcesPage />} />
       </Route>
