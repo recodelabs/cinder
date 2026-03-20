@@ -184,7 +184,14 @@ export function createServer(options: ServerOptions = {}) {
 
       // FHIR proxy
       if (url.pathname.startsWith('/fhir')) {
-        return withSecurityHeaders(await handleFhirProxy(req, url));
+        try {
+          return withSecurityHeaders(await handleFhirProxy(req, url));
+        } catch (err) {
+          console.error('FHIR proxy error:', err);
+          return withSecurityHeaders(
+            Response.json({ error: 'Internal server error' }, { status: 500 }),
+          );
+        }
       }
 
       // Static file serving with path traversal protection
