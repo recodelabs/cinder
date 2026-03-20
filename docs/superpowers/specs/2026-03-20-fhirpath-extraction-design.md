@@ -15,46 +15,87 @@ Extraction templates are stored as a FHIR extension on the Questionnaire resourc
 ```json
 {
   "url": "http://beda.software/fhir-extensions/fhir-path-mapping-language",
-  "valueString": "{\"resourceType\":\"Patient\", \"name\": [{\"given\": [\"{{ QuestionnaireResponse.item.where(linkId='name.given').answer.value }}\"]}]}"
+  "valueString": "[{\"resourceType\":\"Patient\", ...}]"
 }
 ```
 
-The template is JSON-serialized as a string in `valueString`. This is portable and follows FHIR extension conventions.
+The template is a **JSON array of resource templates**, serialized as a string in `valueString`. Each element in the array is a template for one resource to create. A single-resource extraction uses a one-element array. This is portable and follows FHIR extension conventions.
 
 ## Extraction Flow
 
 1. User fills Questionnaire form → submits → QuestionnaireResponse is created (existing flow, unchanged)
-2. After QR creation, fetch the referenced Questionnaire to check for an extraction template extension
-3. If template exists: run `resolveTemplate(questionnaireResponse, template)` in the browser
-4. Create each extracted resource via individual `medplum.createResource()` calls (not a transaction Bundle)
-5. Show success notification with clickable links to the created resources
+2. The Questionnaire is already available as a prop in QuestionnaireFillTab — no re-fetch needed
+3. Call `getExtractionTemplate(questionnaire)` to check for extraction template extension
+4. If template exists: for each template in the array, run `resolveTemplate(questionnaireResponse, template)` in the browser
+5. Create each extracted resource via individual `medplum.createResource()` calls (not a transaction Bundle)
+6. Show success notification with clickable links to the created resources
 
 ## New Module: `src/fhir/extraction.ts`
 
-Core extraction logic, adapted from beda-software's `resolveTemplate`:
+Core extraction logic, adapted from beda-software's `resolveTemplate`.
 
-- `resolveTemplate(resource, template, context?)` — evaluates a mapping template against a FHIR resource. Handles FHIRPath expression evaluation (`{{ expr }}`), array expressions (`{[ expr ]}`), control flow (`{% assign %}`, `{% if %}`, `{% for %}`, `{% merge %}`), and auto-cleanup of nulls/empty values.
-- `getExtractionTemplate(questionnaire)` — reads the `http://beda.software/fhir-extensions/fhir-path-mapping-language` extension from a Questionnaire, returns parsed template JSON or null.
-- `extractResources(questionnaire, questionnaireResponse)` — orchestrates: get template → resolve template with QR as context → return array of FHIR resources to create.
+### Constants
+
+```typescript
+const EXTRACTION_EXTENSION_URL = 'http://beda.software/fhir-extensions/fhir-path-mapping-language';
+```
+
+### Functions
+
+```typescript
+/**
+ * Evaluates a mapping template against a FHIR resource.
+ * Handles: {{ expr }} value interpolation, {[ expr ]} array expressions,
+ * {% assign %}, {% if %}, {% for %}, {% merge %} control flow,
+ * and auto-cleanup of nulls/empty values/empty arrays/empty objects.
+ *
+ * For {% if %} blocks: the key is the condition, the value is the object to include.
+ * When the condition is truthy, the inner object replaces the wrapper object.
+ * When falsy, the entire object is removed (and cleaned up from parent arrays).
+ */
+function resolveTemplate(
+  resource: Record<string, unknown>,
+  template: Record<string, unknown>,
+  context?: Record<string, unknown>,
+): Record<string, unknown> | null
+
+/**
+ * Reads the extraction extension from a Questionnaire.
+ * Returns the parsed template array, or null if no extraction template is configured.
+ */
+function getExtractionTemplate(
+  questionnaire: Questionnaire,
+): Record<string, unknown>[] | null
+
+/**
+ * Runs extraction: gets the template array, resolves each template against
+ * the QuestionnaireResponse, returns the array of FHIR resources to create.
+ * Does NOT create the resources — the caller handles that.
+ */
+function runExtraction(
+  questionnaire: Questionnaire,
+  questionnaireResponse: QuestionnaireResponse,
+): Record<string, unknown>[]
+```
 
 ### Dependencies
 
-- `fhirpath` npm package (already used transitively by Medplum; add as direct dependency)
+- `fhirpath` npm package (already a direct dependency in package.json)
 - FHIR R4 model from `fhirpath/fhir-context/r4` for type-aware expression evaluation
 
 ## New UI: Extraction Tab on Questionnaire Detail Page
 
-A new "Extraction" tab on the Questionnaire detail page (alongside Details, Edit, JSON, Fill):
+A new "Extraction" tab on the Questionnaire detail page (alongside Details, Edit, JSON, Fill). Requires changes to `ResourceDetailPage.tsx` to add the tab to `<Tabs.List>` and render `<ExtractionTab>` in the corresponding panel, conditional on `resourceType === 'Questionnaire'`.
 
 ### Template Editor
-- Mantine `Textarea` with monospace font for editing the mapping template JSON
+- Mantine `Textarea` with monospace font for editing the mapping template JSON (the array of resource templates)
 - Validates JSON on save, shows parse errors inline
 - Save button writes the template back to the Questionnaire resource as the extension
 
 ### Test Panel
-- Dropdown/input to select an existing QuestionnaireResponse for this Questionnaire
-- "Test Extraction" button runs the template against the selected QR
-- Shows the output resources as formatted JSON preview
+- Dropdown/input to select an existing QuestionnaireResponse for this Questionnaire (search by `questionnaire=Questionnaire/{id}`)
+- "Test Extraction" button runs `runExtraction()` against the selected QR
+- Shows the output resources as formatted JSON preview — no resources are created
 - Errors displayed inline
 
 ### Save Behavior
@@ -62,72 +103,128 @@ A new "Extraction" tab on the Questionnaire detail page (alongside Details, Edit
 
 ## Changes to QuestionnaireFillTab
 
+The `questionnaire` prop is already available — no need to re-fetch.
+
 After successful QR creation (in the `.then()` handler):
 
-1. Fetch the Questionnaire (have the ID from `questionnaire.id` prop already available)
-2. Call `getExtractionTemplate(questionnaire)` — if null, skip extraction (existing behavior, just navigate)
-3. If template exists, call `extractResources(questionnaire, questionnaireResponse)`
-4. For each extracted resource, call `medplum.createResource(resource)`, collect results
-5. Show Mantine notification with links to created resources (e.g., "Created Patient/abc-123")
-6. Navigate to the QuestionnaireResponse (existing behavior)
+1. Call `getExtractionTemplate(questionnaire)` — if null, skip extraction (existing behavior, just navigate)
+2. If template exists, call `runExtraction(questionnaire, questionnaireResponse)`
+3. For each extracted resource, call `medplum.createResource(resource)`, collect results
+4. Show Mantine notification with links to created resources (e.g., "Created Patient/abc-123")
+5. Navigate to the QuestionnaireResponse (existing behavior)
+
+Extraction is wrapped in try/catch — failures show a warning notification but do not block QR creation or navigation.
 
 ## Error Handling
 
 - **Template parsing errors** — Displayed in the Extraction tab editor as red text below the textarea
-- **FHIRPath evaluation errors** — Shown as an alert on the QR page after submission. The QR is still saved — extraction failure does not block QR creation.
+- **FHIRPath evaluation errors** — Shown as a warning notification after QR submission. The QR is still saved — extraction failure does not block QR creation.
 - **Individual resource creation failures** — Notification shows which resources succeeded and which failed, with error messages
 
 ## File Structure
 
 ```
-src/fhir/extraction.ts          — Core extraction logic (resolveTemplate, getExtractionTemplate, extractResources)
+src/fhir/extraction.ts          — Core extraction logic (resolveTemplate, getExtractionTemplate, runExtraction)
 src/fhir/extraction.test.ts     — Tests for extraction logic
 src/pages/ExtractionTab.tsx      — Extraction tab UI component
 src/pages/ExtractionTab.test.tsx — Tests for Extraction tab
 ```
 
+Changes to existing files:
+- `src/pages/ResourceDetailPage.tsx` — Add "Extraction" tab for Questionnaire resources, import and render ExtractionTab
+- `src/pages/QuestionnaireFillTab.tsx` — Add post-submission extraction logic
+
+## Testing Strategy
+
+### extraction.test.ts
+- Simple value interpolation (`{{ expr }}`) — single string, date, coding values
+- Nested item traversal (`item.where(linkId='x').item.where(linkId='y')`)
+- Conditional blocks (`{% if %}`) — truthy produces inner object, falsy removes it
+- Array expressions (`{[ expr ]}`) — returns full array not just first element
+- Auto-cleanup — nulls, empty strings, empty arrays, empty objects are removed
+- Multi-resource templates — array with two templates produces two resources
+- Malformed template — invalid JSON in extension returns null from `getExtractionTemplate`
+- Template with no matching QR items — all expressions resolve to empty, cleanup removes them
+- `getExtractionTemplate` — Questionnaire with extension returns parsed template; without returns null
+
+### ExtractionTab.test.tsx
+- Renders template editor with existing template from Questionnaire extension
+- Save writes updated extension back to Questionnaire
+- Test panel runs extraction and displays preview
+- JSON parse errors shown inline
+
 ## Example
 
-Given the patient registration Questionnaire from the user's example, an extraction template might look like:
+Given the patient registration Questionnaire, an extraction template (single-resource, so a one-element array):
+
+```json
+[
+  {
+    "resourceType": "Patient",
+    "name": [
+      {
+        "given": [
+          "{{ QuestionnaireResponse.item.where(linkId='name').item.where(linkId='name.given').answer.value }}"
+        ],
+        "family": "{{ QuestionnaireResponse.item.where(linkId='name').item.where(linkId='name.family').answer.value }}"
+      }
+    ],
+    "birthDate": "{{ QuestionnaireResponse.item.where(linkId='birthDate').answer.value }}",
+    "gender": "{{ QuestionnaireResponse.item.where(linkId='gender').answer.value.code }}",
+    "telecom": [
+      {
+        "{% if QuestionnaireResponse.item.where(linkId='telecom').item.where(linkId='telecom.phone').answer.value %}": {
+          "system": "phone",
+          "value": "{{ QuestionnaireResponse.item.where(linkId='telecom').item.where(linkId='telecom.phone').answer.value }}"
+        }
+      },
+      {
+        "{% if QuestionnaireResponse.item.where(linkId='telecom').item.where(linkId='telecom.email').answer.value %}": {
+          "system": "email",
+          "value": "{{ QuestionnaireResponse.item.where(linkId='telecom').item.where(linkId='telecom.email').answer.value }}"
+        }
+      }
+    ],
+    "identifier": [
+      {
+        "{% if QuestionnaireResponse.item.where(linkId='identifier').answer.value %}": {
+          "value": "{{ QuestionnaireResponse.item.where(linkId='identifier').answer.value }}"
+        }
+      }
+    ]
+  }
+]
+```
+
+**Applied to the example QuestionnaireResponse, this produces:**
 
 ```json
 {
   "resourceType": "Patient",
   "name": [
     {
-      "given": [
-        "{{ QuestionnaireResponse.item.where(linkId='name').item.where(linkId='name.given').answer.value }}"
-      ],
-      "family": "{{ QuestionnaireResponse.item.where(linkId='name').item.where(linkId='name.family').answer.value }}"
+      "given": ["Asa"],
+      "family": "Berg"
     }
   ],
-  "birthDate": "{{ QuestionnaireResponse.item.where(linkId='birthDate').answer.value }}",
-  "gender": "{{ QuestionnaireResponse.item.where(linkId='gender').answer.value.code }}",
+  "birthDate": "2026-03-03",
+  "gender": "female",
   "telecom": [
-    {
-      "{% if QuestionnaireResponse.item.where(linkId='telecom').item.where(linkId='telecom.phone').answer.value %}": {
-        "system": "phone",
-        "value": "{{ QuestionnaireResponse.item.where(linkId='telecom').item.where(linkId='telecom.phone').answer.value }}"
-      }
-    },
-    {
-      "{% if QuestionnaireResponse.item.where(linkId='telecom').item.where(linkId='telecom.email').answer.value %}": {
-        "system": "email",
-        "value": "{{ QuestionnaireResponse.item.where(linkId='telecom').item.where(linkId='telecom.email').answer.value }}"
-      }
-    }
+    { "system": "phone", "value": "911" },
+    { "system": "email", "value": "joe@blow.com" }
   ],
   "identifier": [
-    {
-      "{% if QuestionnaireResponse.item.where(linkId='identifier').answer.value %}": {
-        "value": "{{ QuestionnaireResponse.item.where(linkId='identifier').answer.value }}"
-      }
-    }
+    { "value": "5544" }
   ]
 }
 ```
 
-This template, when applied to the QuestionnaireResponse in the user's example, would produce a Patient resource with the extracted name, birthDate, gender, telecom, and identifier fields.
+The `{% if %}` blocks work as follows: when the condition is truthy, the inner object replaces the wrapper `{ "{% if ... %}": { ... } }` object in the array. When falsy, the wrapper object becomes empty and is removed by auto-cleanup.
+
+## Known Limitations
+
+- **No Questionnaire versioning** — If a Questionnaire's extraction template is updated after QRs have been created, testing extraction against old QRs may produce unexpected results. The Test Panel does not warn about version mismatches.
+- **No template complexity limits** — Deeply nested `{% for %}` loops or expensive FHIRPath expressions could slow the browser. No timeout is enforced in the initial implementation.
 
 ## Out of Scope
 
