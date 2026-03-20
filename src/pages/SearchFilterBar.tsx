@@ -116,9 +116,10 @@ export function SearchFilterBar({ resourceType }: SearchFilterBarProps): JSX.Ele
             placeholder={filter.label}
             size="xs"
             value={values[filter.code] ?? ''}
-            onChange={(e) =>
-              setValues((prev) => ({ ...prev, [filter.code]: e.currentTarget.value }))
-            }
+            onChange={(e) => {
+              const val = e.currentTarget.value;
+              setValues((prev) => ({ ...prev, [filter.code]: val }));
+            }}
             onKeyDown={handleKeyDown}
             style={{ minWidth: 120, maxWidth: 200 }}
           />
