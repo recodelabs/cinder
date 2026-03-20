@@ -119,7 +119,7 @@ export function ExtractionTab({ questionnaire, onSave }: ExtractionTabProps): JS
         }}
         placeholder={'[\n  {\n    "resourceType": "Patient",\n    "name": [{"given": ["{{ QuestionnaireResponse.item.where(linkId=\'name\').answer.value }}"]}]\n  }\n]'}
         rows={16}
-        styles={{ input: { fontFamily: 'monospace', fontSize: 13 } }}
+        styles={{ input: { fontFamily: 'monospace', fontSize: 13, resize: 'vertical' } }}
       />
       <Group>
         <Button onClick={handleSave} loading={saving} disabled={!templateJson.trim()}>
