@@ -1,7 +1,9 @@
 // ABOUTME: Renders a FHIR Questionnaire as an interactive form using formbox-renderer.
 // ABOUTME: On submit, creates a QuestionnaireResponse resource and navigates to it.
 import { Alert, Stack } from '@mantine/core';
-import type { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
+import { notifications } from '@mantine/notifications';
+import type { Questionnaire, QuestionnaireResponse, Resource } from '@medplum/fhirtypes';
+import { getExtractionTemplate, runExtraction } from '../fhir/extraction-helpers';
 import { useMedplum } from '@medplum/react-hooks';
 import type { QuestionnaireOf, QuestionnaireResponseOf } from '@formbox/fhir';
 import type { JSX } from 'react';
@@ -36,13 +38,58 @@ export function QuestionnaireFillTab({ questionnaire }: QuestionnaireFillTabProp
 
       medplum
         .createResource(questionnaireResponse)
-        .then((created) => navigate(`/${created.resourceType}/${created.id}`))
+        .then(async (created) => {
+          // Run extraction if template is configured
+          try {
+            const template = getExtractionTemplate(questionnaire);
+            if (template) {
+              const resources = runExtraction(questionnaire, created as QuestionnaireResponse);
+              const results: Array<{ resourceType: string; id?: string; error?: string }> = [];
+
+              for (const resource of resources) {
+                try {
+                  const saved = await medplum.createResource(resource as unknown as Resource);
+                  results.push({ resourceType: saved.resourceType, id: saved.id });
+                } catch (err) {
+                  results.push({
+                    resourceType: (resource as Record<string, unknown>).resourceType as string ?? 'Unknown',
+                    error: err instanceof Error ? err.message : String(err),
+                  });
+                }
+              }
+
+              if (results.length > 0) {
+                const successes = results.filter((r) => r.id);
+                const failures = results.filter((r) => r.error);
+
+                notifications.show({
+                  title: `Extracted ${successes.length} resource${successes.length !== 1 ? 's' : ''}`,
+                  message: [
+                    ...successes.map((r) => `${r.resourceType}/${r.id}`),
+                    ...failures.map((r) => `Failed: ${r.resourceType} — ${r.error}`),
+                  ].join('\n'),
+                  color: failures.length > 0 ? 'yellow' : 'green',
+                  autoClose: 8000,
+                });
+              }
+            }
+          } catch (extractErr) {
+            notifications.show({
+              title: 'Extraction failed',
+              message: extractErr instanceof Error ? extractErr.message : String(extractErr),
+              color: 'red',
+              autoClose: 8000,
+            });
+          }
+
+          navigate(`/${created.resourceType}/${created.id}`);
+        })
         .catch((err: unknown) => {
           setSubmitting(false);
           setError(err instanceof Error ? err : new Error(String(err)));
         });
     },
-    [medplum, navigate, questionnaire.id]
+    [medplum, navigate, questionnaire.id, questionnaire],
   );
 
   return (

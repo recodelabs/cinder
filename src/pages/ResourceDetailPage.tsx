@@ -11,6 +11,7 @@ import { safeErrorMessage } from '../errors';
 import { PatientRelationships } from './PatientRelationships';
 import { ResourceDetail } from './ResourceDetail';
 import { ResourceHeader } from './ResourceHeader';
+import { ExtractionTab } from './ExtractionTab';
 import { QuestionnaireFillTab } from './QuestionnaireFillTab';
 import { QuestionnaireResponseViewTab } from './QuestionnaireResponseViewTab';
 import { ResourceJsonTab } from './ResourceJsonTab';
@@ -88,6 +89,7 @@ export function ResourceDetailPage(): JSX.Element {
                 <Tabs.Tab value="edit">Edit</Tabs.Tab>
                 <Tabs.Tab value="json">JSON</Tabs.Tab>
                 {resourceType === 'Questionnaire' && <Tabs.Tab value="fill">Fill</Tabs.Tab>}
+                {resourceType === 'Questionnaire' && <Tabs.Tab value="extraction">Extraction</Tabs.Tab>}
                 {resourceType === 'QuestionnaireResponse' && <Tabs.Tab value="response">Response</Tabs.Tab>}
               </Tabs.List>
               <Button variant="subtle" color="red" size="xs" onClick={handleDelete} disabled={saving} loading={saving}>
@@ -111,6 +113,14 @@ export function ResourceDetailPage(): JSX.Element {
             {resourceType === 'Questionnaire' && (
               <Tabs.Panel value="fill" pt="md">
                 <QuestionnaireFillTab questionnaire={resource as Questionnaire} />
+              </Tabs.Panel>
+            )}
+            {resourceType === 'Questionnaire' && (
+              <Tabs.Panel value="extraction" pt="md">
+                <ExtractionTab
+                  questionnaire={resource as Questionnaire}
+                  onSave={(updated) => setResource(updated)}
+                />
               </Tabs.Panel>
             )}
             {resourceType === 'QuestionnaireResponse' && (
