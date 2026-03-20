@@ -3,6 +3,8 @@
 import { MantineProvider } from '@mantine/core';
 import '@mantine/core/styles.css';
 import '@mantine/spotlight/styles.css';
+import { Notifications } from '@mantine/notifications';
+import '@mantine/notifications/styles.css';
 import { MedplumProvider } from '@medplum/react-hooks';
 import type { JSX, ReactNode } from 'react';
 import { useMemo } from 'react';
@@ -43,6 +45,7 @@ interface AppProvidersProps {
 export function AppProviders({ children }: AppProvidersProps): JSX.Element {
   return (
     <MantineProvider>
+      <Notifications position="top-right" />
       <AuthProvider>
         <BrowserRouter>
           <OrgProvider>
