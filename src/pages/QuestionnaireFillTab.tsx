@@ -105,7 +105,7 @@ export function QuestionnaireFillTab({ questionnaire }: QuestionnaireFillTabProp
         fhirVersion="r4"
         theme={formboxTheme}
         mode={submitting ? 'display' : 'capture'}
-        terminologyServerUrl="https://tx.fhir.org/r4"
+        terminologyServerUrl="/terminology"
       />
     </Stack>
   );

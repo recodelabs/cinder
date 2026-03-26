@@ -9,7 +9,7 @@ const SECURITY_HEADERS: Record<string, string> = {
   'Content-Security-Policy': [
     "default-src 'self'",
     "script-src 'self'",
-    "connect-src 'self' https://healthcare.googleapis.com https://tx.fhir.org",
+    "connect-src 'self' https://healthcare.googleapis.com",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data:",
     "frame-ancestors 'none'",
@@ -180,6 +180,23 @@ export function createServer(options: ServerOptions = {}) {
           const message = err instanceof Error ? err.message : 'Failed to delete organization';
           return withSecurityHeaders(Response.json({ error: message }, { status: 400 }));
         }
+      }
+
+      // Terminology proxy — forwards to tx.fhir.org, fixing duplicate CORS headers
+      if (url.pathname.startsWith('/terminology/')) {
+        const targetPath = url.pathname.replace('/terminology/', '/r4/');
+        const targetUrl = `https://tx.fhir.org${targetPath}${url.search}`;
+        const upstream = await fetch(targetUrl, {
+          method: req.method,
+          headers: { 'Accept': 'application/fhir+json' },
+          body: req.method === 'POST' ? req.body : undefined,
+        });
+        const responseHeaders = new Headers();
+        responseHeaders.set('Content-Type', upstream.headers.get('Content-Type') ?? 'application/fhir+json');
+        return withSecurityHeaders(new Response(upstream.body, {
+          status: upstream.status,
+          headers: responseHeaders,
+        }));
       }
 
       // FHIR proxy

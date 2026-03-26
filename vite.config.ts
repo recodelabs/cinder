@@ -68,6 +68,11 @@ export default defineConfig(({ mode }) => {
           target: 'http://localhost:3000',
           changeOrigin: true,
         },
+        '/terminology': {
+          target: 'https://tx.fhir.org',
+          changeOrigin: true,
+          rewrite: (path: string) => path.replace(/^\/terminology/, '/r4'),
+        },
       },
     },
     test: {
