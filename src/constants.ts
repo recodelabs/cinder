@@ -16,6 +16,7 @@ export const RESOURCE_TYPES = [
   'MedicationRequest',
   'MedicationStatement',
   'AllergyIntolerance',
+  'Appointment',
   'Immunization',
   'DiagnosticReport',
   'CarePlan',
