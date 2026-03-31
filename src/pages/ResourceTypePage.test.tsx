@@ -3,6 +3,7 @@
 import { MantineProvider } from '@mantine/core';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
 import type { Bundle, BundleLink, Patient } from '@medplum/fhirtypes';
@@ -49,6 +50,33 @@ describe('ResourceTypePage', () => {
   it('renders the New toolbar button', async () => {
     renderTypePage();
     expect(await screen.findByText('New...')).toBeDefined();
+  });
+
+  it('renders the bulk delete button', async () => {
+    renderTypePage();
+    expect(await screen.findByLabelText('Bulk delete')).toBeDefined();
+  });
+
+  it('enters delete mode when bulk delete button is clicked', async () => {
+    const user = userEvent.setup();
+    renderTypePage();
+    const deleteBtn = await screen.findByLabelText('Bulk delete');
+    await user.click(deleteBtn);
+    // BulkDeleteBar should appear
+    expect(screen.getByText(/0 resources selected/)).toBeDefined();
+    expect(screen.getByRole('button', { name: /delete selected/i })).toBeDefined();
+    expect(screen.getByRole('button', { name: /cancel/i })).toBeDefined();
+  });
+
+  it('exits delete mode when cancel is clicked', async () => {
+    const user = userEvent.setup();
+    renderTypePage();
+    const deleteBtn = await screen.findByLabelText('Bulk delete');
+    await user.click(deleteBtn);
+    expect(screen.getByText(/0 resources selected/)).toBeDefined();
+    await user.click(screen.getByRole('button', { name: /cancel/i }));
+    // Should be back to normal mode
+    expect(screen.queryByText(/resources selected/)).toBeNull();
   });
 
   it('captures page tokens from Bundle next links', async () => {
