@@ -15,6 +15,7 @@ import { ResourceDetailPage } from './pages/ResourceDetailPage';
 import { ResourceCreateRoutePage } from './pages/ResourceCreateRoutePage';
 import { BulkLoadPage } from './pages/BulkLoadPage';
 import { DeletePatientResourcesPage } from './pages/DeletePatientResourcesPage';
+import { MergeDuplicatesPage } from './pages/MergeDuplicates/MergeDuplicatesPage';
 import { SignInPage } from './pages/SignInPage';
 import { CreateOrgPage } from './pages/CreateOrgPage';
 import { OrgSettingsPage } from './pages/OrgSettingsPage';
@@ -68,6 +69,7 @@ function AppContent(): JSX.Element {
         <Route path="/capture/:id" element={<CaptureFillPage />} />
         <Route path="/bulk-load" element={<BulkLoadPage />} />
         <Route path="/delete-patient-resources" element={<DeletePatientResourcesPage />} />
+        <Route path="/merge-duplicates" element={<MergeDuplicatesPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>

@@ -6,7 +6,7 @@ import { getDisplayString } from '@medplum/core';
 import type { Bundle, Resource, ResourceType } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { Spotlight, spotlight } from '@mantine/spotlight';
-import { IconChevronDown, IconClipboard, IconFilter, IconList, IconSearch, IconSettings, IconTrash, IconUpload } from '@tabler/icons-react';
+import { IconChevronDown, IconClipboard, IconFilter, IconGitMerge, IconList, IconSearch, IconSettings, IconTrash, IconUpload } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router';
@@ -163,6 +163,13 @@ export function Shell(): JSX.Element {
             label="Delete Patient Resources"
             leftSection={<IconTrash size={16} />}
             active={activeResourceType === 'delete-patient-resources'}
+          />
+          <NavLink
+            component={Link}
+            to="/merge-duplicates"
+            label="Merge Duplicates"
+            leftSection={<IconGitMerge size={16} />}
+            active={activeResourceType === 'merge-duplicates'}
           />
         </Collapse>
       </AppShell.Navbar>

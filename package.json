@@ -34,6 +34,7 @@
     "@tabler/icons-react": "^3.36.1",
     "better-auth": "^1.5.5",
     "classnames": "^2.5.1",
+    "double-metaphone": "^2.0.1",
     "drizzle-orm": "^0.45.1",
     "fhirpath": "^4.8.5",
     "google-auth-library": "^10.6.2",

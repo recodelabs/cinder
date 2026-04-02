@@ -30,3 +30,14 @@ export const RESOURCE_TYPES = [
   'ServiceRequest',
   'Specimen',
 ] as const;
+
+/**
+ * Resource types that support duplicate detection via name matching.
+ * These types have a `name` field (HumanName[] or string).
+ */
+export const MERGEABLE_RESOURCE_TYPES = [
+  'Patient',
+  'Practitioner',
+  'RelatedPerson',
+  'Organization',
+] as const;
