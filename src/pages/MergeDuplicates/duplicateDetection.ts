@@ -3,16 +3,16 @@
 import { doubleMetaphone } from 'double-metaphone';
 import type { Resource } from '@medplum/fhirtypes';
 
-interface HumanNameResource extends Resource {
+type HumanNameResource = Resource & {
   readonly name?: ReadonlyArray<{
     readonly family?: string;
     readonly given?: readonly string[];
   }>;
-}
+};
 
-interface StringNameResource extends Resource {
+type StringNameResource = Resource & {
   readonly name?: string;
-}
+};
 
 export interface DuplicateGroup {
   readonly phoneticKey: string;
