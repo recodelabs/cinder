@@ -4,7 +4,7 @@ import { Alert, Button, Group, Loader, Stack, Table, Text } from '@mantine/core'
 import type { Bundle, Resource, ResourceType } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { RESOURCE_TYPES } from '../../constants';
 import { safeErrorMessage } from '../../errors';
 import type { DuplicateGroup } from './duplicateDetection';
@@ -29,7 +29,10 @@ export function PreviewStep({ resourceType, group, primaryResource, onConfirm, o
   const [error, setError] = useState<string>();
   const [impacts, setImpacts] = useState<ReferenceImpact[]>([]);
 
-  const duplicates = group.resources.filter((r) => r.id !== primaryResource.id);
+  const duplicates = useMemo(
+    () => group.resources.filter((r) => r.id !== primaryResource.id),
+    [group, primaryResource.id]
+  );
 
   useEffect(() => {
     let cancelled = false;

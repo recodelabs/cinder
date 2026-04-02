@@ -4,7 +4,7 @@ import { Alert, Progress, Stack, Text } from '@mantine/core';
 import type { AuditEvent, Bundle, Resource, ResourceType } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { RESOURCE_TYPES } from '../../constants';
 import { safeErrorMessage } from '../../errors';
 import type { DuplicateGroup } from './duplicateDetection';
@@ -32,7 +32,10 @@ export function ExecutionStep({ resourceType, group, primaryResource, onComplete
   const [error, setError] = useState<string>();
   const startedRef = useRef(false);
 
-  const duplicates = group.resources.filter((r) => r.id !== primaryResource.id);
+  const duplicates = useMemo(
+    () => group.resources.filter((r) => r.id !== primaryResource.id),
+    [group, primaryResource.id]
+  );
 
   useEffect(() => {
     if (startedRef.current) {
@@ -56,30 +59,49 @@ export function ExecutionStep({ resourceType, group, primaryResource, onComplete
             ]);
 
             try {
-              const bundle: Bundle = await medplum.search(searchType as ResourceType, {
-                _content: refString,
-                _count: '100',
-              });
-
-              const resources = (bundle.entry ?? [])
-                .map((e) => e.resource)
-                .filter((r): r is Resource => r !== undefined);
-
               let updatedCount = 0;
-              for (const res of resources) {
-                const rewritten = rewriteReferences(
-                  res,
-                  [duplicate.id!],
-                  primaryResource.id!,
-                  resourceType
-                );
-                if (rewritten) {
-                  await medplum.updateResource(rewritten);
-                  updatedCount++;
-                  totalReferencesUpdated++;
-                  affectedTypes.add(searchType);
+              let cursor: string | undefined;
+
+              // Paginate through all matching resources
+              do {
+                const params: Record<string, string> = {
+                  _content: refString,
+                  _count: '100',
+                };
+                if (cursor) {
+                  params._cursor = cursor;
                 }
-              }
+
+                const bundle: Bundle = await medplum.search(searchType as ResourceType, params);
+
+                const resources = (bundle.entry ?? [])
+                  .map((e) => e.resource)
+                  .filter((r): r is Resource => r !== undefined);
+
+                for (const res of resources) {
+                  const rewritten = rewriteReferences(
+                    res,
+                    [duplicate.id!],
+                    primaryResource.id!,
+                    resourceType
+                  );
+                  if (rewritten) {
+                    await medplum.updateResource(rewritten);
+                    updatedCount++;
+                    totalReferencesUpdated++;
+                    affectedTypes.add(searchType);
+                  }
+                }
+
+                // Extract next page cursor
+                const nextLink = bundle.link?.find((l) => l.relation === 'next');
+                if (nextLink?.url) {
+                  const url = new URL(nextLink.url, window.location.origin);
+                  cursor = url.searchParams.get('_cursor') ?? url.searchParams.get('_page_token') ?? undefined;
+                } else {
+                  cursor = undefined;
+                }
+              } while (cursor);
 
               setProgress((prev) => [
                 ...prev.filter((p) => p.resourceType !== searchType),
@@ -156,7 +178,8 @@ export function ExecutionStep({ resourceType, group, primaryResource, onComplete
     }
 
     execute();
-  }, [medplum, resourceType, duplicates, primaryResource, onComplete]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- startedRef guard ensures single execution
+  }, [medplum, resourceType, duplicates, primaryResource]);
 
   const doneCount = progress.filter((p) => p.status === 'done').length;
   const totalSteps = RESOURCE_TYPES.length * duplicates.length;
