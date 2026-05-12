@@ -22,6 +22,7 @@ export const RESOURCE_TYPES = [
   'CarePlan',
   'CareTeam',
   'Claim',
+  'CodeSystem',
   'Coverage',
   'DocumentReference',
   'Goal',
