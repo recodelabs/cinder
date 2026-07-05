@@ -34,6 +34,7 @@ src/
 ├── config/             # FHIR store config (StoreConfig type, StoreSelector UI)
 ├── fhir/               # MedplumClient adapter, reference cache, ValueSet expansion
 ├── pages/              # Route pages (Home, ResourceType, ResourceDetail, etc.)
+├── pages/map/          # Locations Map (/map): MapLibre view of ICR Location geometry + Terra Draw editing
 ├── App.tsx             # Root component with auth gating + routing
 ├── AppProviders.tsx    # Context providers (Mantine, Auth, Router, Medplum)
 ├── Shell.tsx           # App shell (header, sidebar, spotlight search)
@@ -44,6 +45,16 @@ src/
 server.ts               # Bun production server (SPA + FHIR proxy)
 docs/plans/             # Implementation plans
 ```
+
+### Locations Map
+
+`/map` visualizes FHIR `Location` resources per the ICR IG data model: boundary polygons come
+from the `location-boundary-geojson` extension (Attachment, `application/geo+json`, inline
+base64 `data` or fetchable `url`), with `Location.position` as the point fallback. Filters:
+ICR location type (`icr-location-type-cs`) and parent (`partof`). Terra Draw provides point/
+polygon drawing; saves write `Location.position` (points) or the boundary extension (polygons).
+Dev harness: `bun run dev` then open `/map-preview.html` — runs the map page against in-memory
+fixture Locations, no auth or FHIR store needed (`src/map-preview.tsx`).
 
 ## Code Conventions
 

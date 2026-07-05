@@ -23,6 +23,7 @@ import { ProjectsPage } from './pages/ProjectsPage';
 import { CreateProjectPage } from './pages/CreateProjectPage';
 import { CapturePage } from './pages/CapturePage';
 import { CaptureFillPage } from './pages/CaptureFillPage';
+import { LocationsMapPage } from './pages/map/LocationsMapPage';
 import { loadSchemas } from './schemas';
 
 function AppContent(): JSX.Element {
@@ -67,6 +68,7 @@ function AppContent(): JSX.Element {
         <Route path="/:resourceType/:id/:tab" element={<ResourceDetailPage />} />
         <Route path="/capture" element={<CapturePage />} />
         <Route path="/capture/:id" element={<CaptureFillPage />} />
+        <Route path="/map" element={<LocationsMapPage />} />
         <Route path="/bulk-load" element={<BulkLoadPage />} />
         <Route path="/delete-patient-resources" element={<DeletePatientResourcesPage />} />
         <Route path="/merge-duplicates" element={<MergeDuplicatesPage />} />
