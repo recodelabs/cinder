@@ -6,7 +6,7 @@ import { getDisplayString } from '@medplum/core';
 import type { Bundle, Resource, ResourceType } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { Spotlight, spotlight } from '@mantine/spotlight';
-import { IconChevronDown, IconClipboard, IconFilter, IconGitMerge, IconList, IconSearch, IconSettings, IconTrash, IconUpload } from '@tabler/icons-react';
+import { IconChevronDown, IconClipboard, IconFilter, IconGitMerge, IconList, IconMap, IconSearch, IconSettings, IconTrash, IconUpload } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router';
@@ -117,6 +117,13 @@ export function Shell(): JSX.Element {
           label="Capture"
           leftSection={<IconClipboard size={16} />}
           active={location.pathname.startsWith('/capture')}
+        />
+        <NavLink
+          component={Link}
+          to="/map"
+          label="Map"
+          leftSection={<IconMap size={16} />}
+          active={location.pathname === '/map'}
         />
         <NavLink
           label="Resources"
