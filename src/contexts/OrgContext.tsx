@@ -25,6 +25,7 @@ interface OrgContextValue {
   readonly setActiveOrg: (orgId: string) => void;
   readonly setActiveProject: (project: Project) => void;
   readonly refreshProjects: () => Promise<void>;
+  readonly deleteProject: (projectId: string) => Promise<void>;
 }
 
 const ACTIVE_ORG_KEY = 'cinder:active-org';
@@ -113,6 +114,30 @@ export function OrgProvider({ children }: OrgProviderProps): JSX.Element {
     localStorage.setItem(ACTIVE_PROJECT_KEY, JSON.stringify(project));
   }, []);
 
+  const deleteProject = useCallback(
+    async (projectId: string) => {
+      const response = await fetch(`/api/projects/${projectId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error((body as { error?: string }).error ?? 'Failed to delete project');
+      }
+      // Clear the active project if it was the one deleted; the auto-select
+      // effect will pick the next available project once the list refreshes.
+      setActiveProjectState((prev) => {
+        if (prev?.id === projectId) {
+          localStorage.removeItem(ACTIVE_PROJECT_KEY);
+          return undefined;
+        }
+        return prev;
+      });
+      await refreshProjects();
+    },
+    [refreshProjects]
+  );
+
   const value = useMemo<OrgContextValue>(
     () => ({
       activeOrgId,
@@ -123,8 +148,9 @@ export function OrgProvider({ children }: OrgProviderProps): JSX.Element {
       setActiveOrg,
       setActiveProject,
       refreshProjects,
+      deleteProject,
     }),
-    [activeOrgId, activeOrgSlug, activeOrgAuthMode, activeProject, projects, setActiveOrg, setActiveProject, refreshProjects]
+    [activeOrgId, activeOrgSlug, activeOrgAuthMode, activeProject, projects, setActiveOrg, setActiveProject, refreshProjects, deleteProject]
   );
 
   return <OrgContext.Provider value={value}>{children}</OrgContext.Provider>;
