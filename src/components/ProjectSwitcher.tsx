@@ -1,7 +1,7 @@
 // ABOUTME: Dropdown menu to switch between projects within the active organization.
 // ABOUTME: Shows active project name, lists all projects with GCP details, and links to create.
 import { Button, Menu, Text } from '@mantine/core';
-import { IconChevronDown, IconDatabase, IconPlus } from '@tabler/icons-react';
+import { IconChevronDown, IconDatabase, IconPlus, IconSettings } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { Link } from 'react-router';
 import { useOrg } from '../contexts/OrgContext';
@@ -41,6 +41,13 @@ export function ProjectSwitcher(): JSX.Element {
           </Menu.Item>
         ))}
         <Menu.Divider />
+        <Menu.Item
+          component={Link}
+          to={`/orgs/${activeOrgSlug}/projects`}
+          leftSection={<IconSettings size={14} />}
+        >
+          Manage Projects
+        </Menu.Item>
         <Menu.Item
           component={Link}
           to={`/orgs/${activeOrgSlug}/projects/new`}
