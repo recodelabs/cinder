@@ -21,6 +21,7 @@ import { CreateOrgPage } from './pages/CreateOrgPage';
 import { OrgSettingsPage } from './pages/OrgSettingsPage';
 import { ProjectsPage } from './pages/ProjectsPage';
 import { CreateProjectPage } from './pages/CreateProjectPage';
+import { EditProjectPage } from './pages/EditProjectPage';
 import { CapturePage } from './pages/CapturePage';
 import { CaptureFillPage } from './pages/CaptureFillPage';
 import { LocationsMapPage } from './pages/map/LocationsMapPage';
@@ -59,6 +60,7 @@ function AppContent(): JSX.Element {
         <Route path="/orgs/:orgSlug/settings" element={<OrgSettingsPage />} />
         <Route path="/orgs/:orgSlug/projects" element={<ProjectsPage />} />
         <Route path="/orgs/:orgSlug/projects/new" element={<CreateProjectPage />} />
+        <Route path="/orgs/:orgSlug/projects/:projectSlug/edit" element={<EditProjectPage />} />
       </Route>
       <Route element={<FhirProvider><Shell /></FhirProvider>}>
         <Route path="/" element={<HomePage />} />
