@@ -30,9 +30,12 @@ export const RESOURCE_TYPES = [
   'Location',
   'MeasureReport',
   'Medication',
+  'MedicationAdministration',
+  'PlanDefinition',
   'ServiceRequest',
   'Specimen',
   'SupplyDelivery',
+  'Task',
 ] as const;
 
 /**
