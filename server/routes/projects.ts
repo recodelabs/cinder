@@ -5,9 +5,20 @@ import { z } from 'zod';
 import { db } from '../db';
 import { project } from '../schema';
 import { requireOrgMember, requireOrgOwner } from '../middleware';
-import { slugify, validateProjectInput, type ProjectInput } from './project-validation';
+import { isAllowedFhirHost } from '../fhir-target';
+import { projectTargetColumns, slugify, validateProjectInput, type ProjectInput } from './project-validation';
 
 export { slugify, validateProjectInput } from './project-validation';
+
+/** Generic FHIR server targets must be on the CINDER_ALLOWED_FHIR_HOSTS allowlist. */
+function rejectDisallowedFhirHost(input: ProjectInput): Response | undefined {
+  if (input.serverType !== 'fhir') return undefined;
+  if (isAllowedFhirHost(input.fhirBaseUrl, process.env.CINDER_ALLOWED_FHIR_HOSTS)) return undefined;
+  return Response.json(
+    { error: 'This FHIR server host is not allowed. Add its hostname to CINDER_ALLOWED_FHIR_HOSTS on the server.' },
+    { status: 400 },
+  );
+}
 
 export async function handleListProjects(req: Request, orgId: string): Promise<Response> {
   try {
@@ -46,10 +57,13 @@ export async function handleCreateProject(req: Request, orgId: string): Promise<
     input = validateProjectInput(body);
   } catch (e) {
     if (e instanceof z.ZodError) {
-      return Response.json({ error: e.errors }, { status: 400 });
+      return Response.json({ error: e.issues.map((i) => `${i.path.join('.') || 'input'}: ${i.message}`).join('; ') }, { status: 400 });
     }
     throw e;
   }
+
+  const rejected = rejectDisallowedFhirHost(input);
+  if (rejected) return rejected;
 
   const slug = input.slug || slugify(input.name);
 
@@ -59,10 +73,7 @@ export async function handleCreateProject(req: Request, orgId: string): Promise<
       slug,
       description: input.description,
       organizationId: orgId,
-      gcpProject: input.gcpProject,
-      gcpLocation: input.gcpLocation,
-      gcpDataset: input.gcpDataset,
-      gcpFhirStore: input.gcpFhirStore,
+      ...projectTargetColumns(input),
     }).returning();
 
     return Response.json(created, { status: 201 });
@@ -127,10 +138,13 @@ export async function handleUpdateProject(req: Request, projectId: string): Prom
     input = validateProjectInput(body);
   } catch (e) {
     if (e instanceof z.ZodError) {
-      return Response.json({ error: e.errors }, { status: 400 });
+      return Response.json({ error: e.issues.map((i) => `${i.path.join('.') || 'input'}: ${i.message}`).join('; ') }, { status: 400 });
     }
     throw e;
   }
+
+  const rejected = rejectDisallowedFhirHost(input);
+  if (rejected) return rejected;
 
   const slug = input.slug || slugify(input.name);
 
@@ -140,10 +154,7 @@ export async function handleUpdateProject(req: Request, projectId: string): Prom
       name: input.name,
       slug,
       description: input.description,
-      gcpProject: input.gcpProject,
-      gcpLocation: input.gcpLocation,
-      gcpDataset: input.gcpDataset,
-      gcpFhirStore: input.gcpFhirStore,
+      ...projectTargetColumns(input),
       updatedAt: new Date(),
     })
     .where(eq(project.id, projectId))

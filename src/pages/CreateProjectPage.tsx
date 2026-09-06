@@ -1,5 +1,5 @@
 // ABOUTME: Form page to create a new project within the active organization.
-// ABOUTME: Collects project name, description, and GCP coordinates, then POSTs to the API.
+// ABOUTME: Collects project name, description, and FHIR target (GCP or FHIR server), then POSTs to the API.
 import type { JSX } from 'react';
 import { useNavigate } from 'react-router';
 import { useOrg } from '../contexts/OrgContext';

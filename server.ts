@@ -1,9 +1,16 @@
 // ABOUTME: Bun production server for the Cinder SPA.
-// ABOUTME: Serves static files, proxies /fhir/* using org service accounts, handles auth/org/project API routes.
+// ABOUTME: Serves static files, proxies /fhir/* to GCP (via org service accounts) or a generic FHIR server, handles auth/org/project API routes.
 import { existsSync, statSync } from 'fs';
 import { gzipSync } from 'bun';
 import { extname, join, resolve } from 'path';
 import { eq } from 'drizzle-orm';
+import {
+  buildFhirTargetUrl,
+  isAllowedFhirHost,
+  resourcePathFromProxyPath,
+  rewriteBundleLinks,
+  rewriteUpstreamUrl,
+} from './server/fhir-target';
 
 const SECURITY_HEADERS: Record<string, string> = {
   'Content-Security-Policy': [
@@ -257,6 +264,14 @@ async function handleFhirProxy(req: Request, url: URL): Promise<Response> {
     throw e;
   }
 
+  // Generic FHIR servers (HAPI, etc.) need no GCP token — forward directly.
+  if (proj.serverType === 'fhir') {
+    if (!proj.fhirBaseUrl) {
+      return Response.json({ error: 'Project has no FHIR server URL configured' }, { status: 503 });
+    }
+    return proxyToFhirServer(req, url, proj.fhirBaseUrl);
+  }
+
   // Determine org auth mode from Better Auth metadata
   const orgRows = await db.execute<{ metadata: string | null }>(
     (await import('drizzle-orm')).sql`SELECT metadata FROM organization WHERE id = ${proj.organizationId} LIMIT 1`
@@ -341,6 +356,64 @@ async function handleFhirProxy(req: Request, url: URL): Promise<Response> {
     status: upstream.status,
     headers: responseHeaders,
   });
+}
+
+const FORWARDED_REQUEST_HEADERS = ['Content-Type', 'Accept', 'Prefer', 'If-Match', 'If-None-Match', 'If-None-Exist'];
+
+/**
+ * Proxies a request to a plain FHIR server. Paging is translated so the browser
+ * keeps using the same _cursor/_page_token contract it uses for GCP: HAPI-style
+ * "next" links are folded into an opaque cursor, and cursor requests are replayed
+ * at the server base URL.
+ */
+async function proxyToFhirServer(req: Request, url: URL, fhirBaseUrl: string): Promise<Response> {
+  if (!isAllowedFhirHost(fhirBaseUrl, process.env.CINDER_ALLOWED_FHIR_HOSTS)) {
+    return Response.json(
+      { error: 'This FHIR server host is not allowed. Add its hostname to CINDER_ALLOWED_FHIR_HOSTS on the server.' },
+      { status: 503 },
+    );
+  }
+
+  const targetUrl = buildFhirTargetUrl(fhirBaseUrl, url.pathname, url.search);
+  const headers = new Headers();
+  for (const name of FORWARDED_REQUEST_HEADERS) {
+    const value = req.headers.get(name);
+    if (value) headers.set(name, value);
+  }
+  if (!headers.has('Accept')) {
+    headers.set('Accept', 'application/fhir+json');
+  }
+
+  const upstream = await fetch(targetUrl, {
+    method: req.method,
+    headers,
+    body: req.method === 'GET' || req.method === 'HEAD' ? undefined : req.body,
+  });
+
+  const proxyFhirBase = `${url.origin}/fhir`;
+  const responseHeaders = new Headers(upstream.headers);
+  responseHeaders.delete('Content-Encoding');
+  responseHeaders.delete('Content-Length');
+  for (const name of ['Location', 'Content-Location']) {
+    const value = responseHeaders.get(name);
+    if (value) responseHeaders.set(name, rewriteUpstreamUrl(value, fhirBaseUrl, proxyFhirBase));
+  }
+
+  const contentType = upstream.headers.get('Content-Type') ?? '';
+  if (!contentType.includes('json')) {
+    return new Response(upstream.body, { status: upstream.status, headers: responseHeaders });
+  }
+
+  // Bundles carry absolute upstream links; point them back at this proxy.
+  const text = await upstream.text();
+  let body: unknown;
+  try {
+    body = JSON.parse(text);
+  } catch {
+    return new Response(text, { status: upstream.status, headers: responseHeaders });
+  }
+  const rewritten = rewriteBundleLinks(body, fhirBaseUrl, proxyFhirBase, resourcePathFromProxyPath(url.pathname));
+  return new Response(JSON.stringify(rewritten), { status: upstream.status, headers: responseHeaders });
 }
 
 // Start server when run directly

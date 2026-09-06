@@ -1,5 +1,5 @@
 // ABOUTME: Drizzle schema for saved_store, org_credential, and project tables.
-// ABOUTME: Stores FHIR store configs, encrypted org credentials, and project definitions.
+// ABOUTME: Stores FHIR store configs, encrypted org credentials, and project definitions (GCP or generic FHIR server).
 import { integer, pgTable, text, timestamp, unique } from 'drizzle-orm/pg-core';
 
 export const savedStore = pgTable('saved_store', {
@@ -36,10 +36,14 @@ export const project = pgTable('project', {
   slug: text('slug').notNull(),
   description: text('description'),
   organizationId: text('organization_id').notNull(),
-  gcpProject: text('gcp_project').notNull(),
-  gcpLocation: text('gcp_location').notNull(),
-  gcpDataset: text('gcp_dataset').notNull(),
-  gcpFhirStore: text('gcp_fhir_store').notNull(),
+  // 'gcp' targets Google Cloud Healthcare API via the gcp* coordinates;
+  // 'fhir' targets any FHIR R4 server (e.g. HAPI) at fhirBaseUrl with no auth.
+  serverType: text('server_type', { enum: ['gcp', 'fhir'] }).notNull().default('gcp'),
+  fhirBaseUrl: text('fhir_base_url'),
+  gcpProject: text('gcp_project'),
+  gcpLocation: text('gcp_location'),
+  gcpDataset: text('gcp_dataset'),
+  gcpFhirStore: text('gcp_fhir_store'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (table) => [

@@ -5,6 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:server": "bun --watch server.ts",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "start": "bun server.ts",

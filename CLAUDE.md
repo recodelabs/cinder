@@ -11,7 +11,7 @@ Cinder is a React SPA that browses, searches, and edits FHIR resources in Google
 - **UI:** Mantine 8, Tabler Icons
 - **Routing:** React Router 7
 - **FHIR:** @medplum/core, @medplum/react, @medplum/fhirtypes, @medplum/definitions (all 5.0.x)
-- **Auth:** Google Identity Services (implicit OAuth2 flow) — migrating to Better Auth
+- **Auth:** Better Auth (Google social login; optional email/password for local dev)
 - **Testing:** Vitest, Testing Library (React + DOM + user-event), jsdom
 - **Production Server:** Bun HTTP server (`server.ts`) — static files + FHIR proxy
 
@@ -24,6 +24,8 @@ bun run build        # TypeScript check + Vite production build
 bun run test         # Run all tests once
 bun run test:watch   # Run tests in watch mode
 bun run start        # Start production server (port 3000)
+bun run dev:server   # Bun API server with reload (needed alongside `bun run dev`)
+bun run db:up        # Local Postgres via docker compose
 ```
 
 ## Project Structure
@@ -70,9 +72,15 @@ fixture Locations, no auth or FHIR store needed (`src/map-preview.tsx`).
 
 ### FHIR Proxy
 
-All FHIR requests go through `/fhir/*`:
-- **Dev:** Vite proxy rewrites to GCP Healthcare API (uses `service-account.json` if present)
-- **Prod:** `server.ts` proxies using `X-Store-Base` header from the browser
+All FHIR requests go through `/fhir/*` on the Bun server (`server.ts`); in dev, Vite proxies
+`/fhir` and `/api` to it on port 3000. The browser sends `X-Project-Id`; the server looks up the
+project and forwards based on its `serverType`:
+- **`gcp`:** Google Cloud Healthcare API, authenticated with the org's service account or the
+  user's Google token. `_cursor` is rewritten to `_page_token`.
+- **`fhir`:** any FHIR R4 server (e.g. local HAPI) at `fhirBaseUrl`, no auth. Helpers in
+  `server/fhir-target.ts` translate HAPI `_getpages` paging into the same `_page_token`
+  contract and rewrite Bundle links back to the proxy. Hosts must be listed in
+  `CINDER_ALLOWED_FHIR_HOSTS`.
 
 ### Schema Loading
 
@@ -85,15 +93,20 @@ FHIR R4 schemas are loaded from `@medplum/definitions` bundles at startup (`load
 
 ### Auth Flow
 
-Without `VITE_GOOGLE_CLIENT_ID`: dev proxy mode (no auth, uses service account)
-With `VITE_GOOGLE_CLIENT_ID`: Google OAuth implicit flow → StoreSelector → FHIR browser
+Better Auth sessions (`server/auth.ts`) with Google sign-in, then org → project selection.
+With `CINDER_DEV_AUTH=true` (never in production) the sign-in page also offers email/password
+accounts so local dev needs no Google OAuth client.
 
 ## Dev Setup
 
-1. Copy `.env.example` to `.env` and fill in GCP coordinates
-2. For dev proxy mode: place a GCP service account key at `service-account.json` (gitignored)
-3. For browser OAuth: set `VITE_GOOGLE_CLIENT_ID` in `.env`
-4. `bun install && bun run dev`
+See `docs/local-dev.md` for the full walkthrough (local Postgres, dev sign-in, pointing a
+project at a local HAPI server). Short version:
+
+1. `cp .env.example .env`, set `BETTER_AUTH_SECRET`, `CINDER_DEV_AUTH=true`,
+   `CINDER_ALLOWED_FHIR_HOSTS=localhost`
+2. `bun install && bun run db:up && bun run dev:server` (one terminal) and `bun run dev` (another)
+3. Sign in with any email/password, create an org, create a project of type "FHIR server"
+   with base URL `http://localhost:3447/fhir`
 
 ## Testing
 

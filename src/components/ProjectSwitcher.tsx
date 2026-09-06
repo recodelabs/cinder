@@ -1,10 +1,10 @@
 // ABOUTME: Dropdown menu to switch between projects within the active organization.
-// ABOUTME: Shows active project name, lists all projects with GCP details, and links to create.
+// ABOUTME: Shows active project name, lists all projects with their FHIR target, and links to create.
 import { Button, Menu, Text } from '@mantine/core';
 import { IconChevronDown, IconDatabase, IconPlus, IconSettings } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { Link } from 'react-router';
-import { useOrg } from '../contexts/OrgContext';
+import { projectTargetLabel, useOrg } from '../contexts/OrgContext';
 
 export function ProjectSwitcher(): JSX.Element {
   const { activeOrgSlug, activeProject, projects, setActiveProject } = useOrg();
@@ -36,7 +36,7 @@ export function ProjectSwitcher(): JSX.Element {
           >
             <Text size="sm">{p.name}</Text>
             <Text size="xs" c="dimmed">
-              {p.gcpProject}/{p.gcpFhirStore}
+              {projectTargetLabel(p)}
             </Text>
           </Menu.Item>
         ))}
