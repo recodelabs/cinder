@@ -1,4 +1,4 @@
-// ABOUTME: Form page to edit an existing project's details and GCP coordinates.
+// ABOUTME: Form page to edit an existing project's details and FHIR target.
 // ABOUTME: Loads the project by slug from context and PATCHes the API on submit.
 import { Container, Text } from '@mantine/core';
 import type { JSX } from 'react';
@@ -49,10 +49,12 @@ export function EditProjectPage(): JSX.Element {
       initialValues={{
         name: target.name,
         description: target.description ?? '',
-        gcpProject: target.gcpProject,
-        gcpLocation: target.gcpLocation,
-        gcpDataset: target.gcpDataset,
-        gcpFhirStore: target.gcpFhirStore,
+        serverType: target.serverType,
+        fhirBaseUrl: target.fhirBaseUrl ?? '',
+        gcpProject: target.gcpProject ?? '',
+        gcpLocation: target.gcpLocation ?? '',
+        gcpDataset: target.gcpDataset ?? '',
+        gcpFhirStore: target.gcpFhirStore ?? '',
       }}
       onSubmit={handleSubmit}
     />

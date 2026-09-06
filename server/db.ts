@@ -139,14 +139,36 @@ export async function ensureTables() {
       "slug" text NOT NULL,
       "description" text,
       "organization_id" text NOT NULL,
-      "gcp_project" text NOT NULL,
-      "gcp_location" text NOT NULL,
-      "gcp_dataset" text NOT NULL,
-      "gcp_fhir_store" text NOT NULL,
+      "server_type" text NOT NULL DEFAULT 'gcp',
+      "fhir_base_url" text,
+      "gcp_project" text,
+      "gcp_location" text,
+      "gcp_dataset" text,
+      "gcp_fhir_store" text,
       "created_at" timestamp DEFAULT now() NOT NULL,
       "updated_at" timestamp DEFAULT now() NOT NULL,
       CONSTRAINT "project_organization_id_slug_unique" UNIQUE("organization_id","slug")
     );
+  `);
+
+  // Upgrade projects created before generic FHIR server support. Guarded by
+  // information_schema checks (rather than ADD COLUMN IF NOT EXISTS) so a
+  // fresh database does not log "already exists" notices on every start.
+  await db.execute(sql`
+    DO $$ BEGIN
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                     WHERE table_name = 'project' AND column_name = 'server_type') THEN
+        ALTER TABLE "project" ADD COLUMN "server_type" text NOT NULL DEFAULT 'gcp';
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                     WHERE table_name = 'project' AND column_name = 'fhir_base_url') THEN
+        ALTER TABLE "project" ADD COLUMN "fhir_base_url" text;
+      END IF;
+      ALTER TABLE "project" ALTER COLUMN "gcp_project" DROP NOT NULL;
+      ALTER TABLE "project" ALTER COLUMN "gcp_location" DROP NOT NULL;
+      ALTER TABLE "project" ALTER COLUMN "gcp_dataset" DROP NOT NULL;
+      ALTER TABLE "project" ALTER COLUMN "gcp_fhir_store" DROP NOT NULL;
+    END $$;
   `);
 }
 

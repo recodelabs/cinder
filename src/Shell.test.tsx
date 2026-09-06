@@ -16,7 +16,8 @@ vi.mock('./auth/AuthProvider', () => ({
   useAuth: () => ({ isAuthenticated: true, signOut: mockSignOut }),
 }));
 
-vi.mock('./contexts/OrgContext', () => ({
+vi.mock('./contexts/OrgContext', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./contexts/OrgContext')>()),
   useOrg: () => ({
     activeOrgId: null,
     activeOrgSlug: null,

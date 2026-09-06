@@ -22,13 +22,16 @@ const project = {
   slug: 'alpha',
   description: 'First project',
   organizationId: 'org-1',
+  serverType: 'gcp' as const,
+  fhirBaseUrl: null,
   gcpProject: 'gcp-alpha',
   gcpLocation: 'us-central1',
   gcpDataset: 'ds',
   gcpFhirStore: 'store',
 };
 
-vi.mock('../contexts/OrgContext', () => ({
+vi.mock('../contexts/OrgContext', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../contexts/OrgContext')>()),
   useOrg: () => ({
     activeOrgSlug: 'my-org',
     projects: [project],

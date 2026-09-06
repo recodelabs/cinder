@@ -48,6 +48,10 @@ export default defineConfig(({ mode }) => {
   const targetBase = `https://healthcare.googleapis.com/v1/projects/${project}/locations/${location}/datasets/${dataset}/fhirStores/${fhirStore}/fhir`;
 
   return {
+    // Shows the email/password form on the sign-in page. The server enforces the real gate.
+    define: {
+      __CINDER_DEV_AUTH__: JSON.stringify(env.CINDER_DEV_AUTH === 'true'),
+    },
     plugins: [
       react(),
       gcpAuthPlugin(resolve(__dirname, 'service-account.json')),
@@ -79,7 +83,7 @@ export default defineConfig(({ mode }) => {
       globals: true,
       environment: 'jsdom',
       setupFiles: './src/test.setup.ts',
-      exclude: ['node_modules/**', 'server.test.ts', 'server/**/*.test.ts'],
+      exclude: ['node_modules/**', '.claude/**', '.worktrees/**', 'server.test.ts', 'server/**/*.test.ts'],
     },
   };
 });

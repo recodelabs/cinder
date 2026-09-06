@@ -4,16 +4,29 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import type { JSX } from 'react';
 import { authClient } from '../auth/auth-client';
 
+export type ProjectServerType = 'gcp' | 'fhir';
+
 export interface Project {
   readonly id: string;
   readonly name: string;
   readonly slug: string;
   readonly description: string | null;
   readonly organizationId: string;
-  readonly gcpProject: string;
-  readonly gcpLocation: string;
-  readonly gcpDataset: string;
-  readonly gcpFhirStore: string;
+  /** 'gcp' = Google Cloud Healthcare API; 'fhir' = any FHIR R4 server at fhirBaseUrl. */
+  readonly serverType: ProjectServerType;
+  readonly fhirBaseUrl: string | null;
+  readonly gcpProject: string | null;
+  readonly gcpLocation: string | null;
+  readonly gcpDataset: string | null;
+  readonly gcpFhirStore: string | null;
+}
+
+/** Short human-readable description of where a project's FHIR data lives. */
+export function projectTargetLabel(project: Pick<Project, 'serverType' | 'fhirBaseUrl' | 'gcpProject' | 'gcpFhirStore'>): string {
+  if (project.serverType === 'fhir') {
+    return project.fhirBaseUrl ?? 'FHIR server';
+  }
+  return `${project.gcpProject ?? '?'}/${project.gcpFhirStore ?? '?'}`;
 }
 
 interface OrgContextValue {

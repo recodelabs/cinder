@@ -17,7 +17,7 @@ import { IconDots, IconPencil, IconTrash } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { useOrg, type Project } from '../contexts/OrgContext';
+import { projectTargetLabel, useOrg, type Project } from '../contexts/OrgContext';
 
 export function ProjectsPage(): JSX.Element {
   const navigate = useNavigate();
@@ -108,7 +108,7 @@ export function ProjectsPage(): JSX.Element {
                 </Text>
               )}
               <Text size="xs" c="dimmed" mt="xs">
-                {p.gcpProject}/{p.gcpFhirStore}
+                {projectTargetLabel(p)}
               </Text>
             </Card>
           ))}
@@ -119,7 +119,7 @@ export function ProjectsPage(): JSX.Element {
         <Stack gap="md">
           <Text size="sm">
             Are you sure you want to delete <strong>{pendingDelete?.name}</strong>? This removes the
-            project from Cinder. The underlying GCP FHIR store is not affected.
+            project from Cinder. The underlying FHIR server is not affected.
           </Text>
           {error && (
             <Text c="red" size="sm">
