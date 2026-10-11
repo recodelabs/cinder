@@ -16,7 +16,14 @@ let fhirBase: string;
 let validTokens = new Set<string>();
 let tokenRequests = 0;
 let tokenStatus = 200;
-let fhirRequests: { path: string; search: string; authorization: string | null; method: string; body: string }[] = [];
+let fhirRequests: {
+  path: string;
+  search: string;
+  authorization: string | null;
+  ifNoneMatch: string | null;
+  method: string;
+  body: string;
+}[] = [];
 let requireAuth = true;
 
 const LOCATIONS = ['loc-1', 'loc-2', 'loc-3', 'loc-4', 'loc-5'];
@@ -62,7 +69,14 @@ beforeAll(() => {
     async fetch(req) {
       const url = new URL(req.url);
       const authorization = req.headers.get('Authorization');
-      fhirRequests.push({ path: url.pathname, search: url.search, authorization, method: req.method, body: await req.text() });
+      fhirRequests.push({
+        path: url.pathname,
+        search: url.search,
+        authorization,
+        ifNoneMatch: req.headers.get('If-None-Match'),
+        method: req.method,
+        body: await req.text(),
+      });
 
       if (url.pathname === '/fhir/metadata') {
         return Response.json({ resourceType: 'CapabilityStatement', fhirVersion: '4.0.1' });
@@ -250,6 +264,15 @@ describe('proxyToFhirServer without credentials', () => {
     const outcome = (await res.json()) as { issue: { diagnostics: string }[] };
     expect(outcome.issue[0]!.diagnostics).toContain('Add client credentials to the project');
     expect(fhirRequests).toHaveLength(1);
+  });
+
+  it('does not forward the browser cache validator If-None-Match', async () => {
+    requireAuth = false;
+    const url = new URL(`${PROXY_ORIGIN}/fhir/Location?_count=2`);
+    const req = new Request(url, { headers: { 'If-None-Match': 'W/"1"' } });
+    const res = await proxyToFhirServer(req, url, { baseUrl: fhirBase }, { allowedHosts: ALLOWED, tokens });
+    expect(res.status).toBe(200);
+    expect(fhirRequests[0]!.ifNoneMatch).toBeNull();
   });
 
   it('still reads open endpoints such as metadata', async () => {

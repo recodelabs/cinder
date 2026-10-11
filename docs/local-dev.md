@@ -87,6 +87,9 @@ again if you change the token URL or client ID.
 - An upstream 401 (no credentials, or still rejected after the retry) and a
   token endpoint 4xx come back as a 403 OperationOutcome. A 401 would sign the
   user out of Cinder, and Medplum retries 5xx responses.
+- `If-None-Match` is not forwarded. The browser's cache is keyed by URL, not by
+  project, so its ETags can belong to another server, and FHIR Info Gateway
+  returns a 500 when HAPI answers a conditional read with 304.
 - HAPI pages with `Bundle.link[next] = <base>?_getpages=…`. The proxy folds that
   query into an opaque `_page_token` on the `next` link, and when the browser
   sends it back as `_cursor`/`_page_token`, the proxy replays the decoded query

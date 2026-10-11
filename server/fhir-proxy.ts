@@ -22,7 +22,10 @@ export interface FhirProxyOptions {
   readonly tokens: ClientCredentialsTokens;
 }
 
-const FORWARDED_REQUEST_HEADERS = ['Content-Type', 'Accept', 'Prefer', 'If-Match', 'If-None-Match', 'If-None-Exist'];
+// If-None-Match is deliberately not forwarded. It comes from the browser's HTTP cache, which
+// is keyed by URL rather than project, so its ETag may belong to another project's server.
+// FHIR Info Gateway also fails with a 500 when HAPI answers a conditional read with 304.
+const FORWARDED_REQUEST_HEADERS = ['Content-Type', 'Accept', 'Prefer', 'If-Match', 'If-None-Exist'];
 
 function securityOutcome(status: number, text: string): Response {
   return Response.json(
