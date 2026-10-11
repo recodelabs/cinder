@@ -1,5 +1,5 @@
 // ABOUTME: React context provider for Better Auth session management.
-// ABOUTME: Exposes sign-in/sign-out (Google, plus dev email/password), session state, and user info.
+// ABOUTME: Exposes sign-in/sign-out (Google, Keycloak, plus dev email/password), session state, and user info.
 import { createContext, useCallback, useContext, useMemo, type ReactNode } from 'react';
 import type { JSX } from 'react';
 import { authClient } from './auth-client';
@@ -18,6 +18,8 @@ interface AuthContextValue {
   readonly userId: string | undefined;
   readonly email: string | undefined;
   readonly signIn: () => void;
+  /** Sign in through a generic OAuth provider such as Keycloak; failures return to /sign-in?error=… */
+  readonly signInWithOAuth2: (providerId: string) => void;
   /** Dev-only email/password sign-in; resolves to an error message on failure. */
   readonly signInWithEmail: (credentials: EmailCredentials) => Promise<string | undefined>;
   /** Dev-only email/password account creation; resolves to an error message on failure. */
@@ -37,6 +39,10 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
 
   const signIn = useCallback(() => {
     authClient.signIn.social({ provider: 'google' });
+  }, []);
+
+  const signInWithOAuth2 = useCallback((providerId: string) => {
+    authClient.signIn.oauth2({ providerId, callbackURL: '/', errorCallbackURL: '/sign-in' });
   }, []);
 
   const signInWithEmail = useCallback(async ({ email, password }: EmailCredentials) => {
@@ -59,12 +65,13 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
       userId: session.data?.user?.id,
       email: session.data?.user?.email,
       signIn,
+      signInWithOAuth2,
       signInWithEmail,
       signUpWithEmail,
       signOut,
       session,
     }),
-    [session, signIn, signInWithEmail, signUpWithEmail, signOut]
+    [session, signIn, signInWithOAuth2, signInWithEmail, signUpWithEmail, signOut]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

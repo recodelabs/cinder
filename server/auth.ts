@@ -1,12 +1,14 @@
-// ABOUTME: Better Auth server instance with Google social login, optional dev email/password login, and organization plugin.
+// ABOUTME: Better Auth server instance with Google social login, optional Keycloak and dev email/password login, and organization plugin.
 // ABOUTME: Manages user sessions, org membership, and invitations.
 
 import { betterAuth } from 'better-auth';
 import { organization } from 'better-auth/plugins';
+import { genericOAuth } from 'better-auth/plugins/generic-oauth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { sql } from 'drizzle-orm';
 import { authDb, db } from './db';
 import * as authSchema from './auth-schema';
+import { keycloakConfigFromEnv, keycloakProvider } from './keycloak-sign-in';
 
 /**
  * Local development can sign in with email/password instead of Google.
@@ -22,8 +24,12 @@ if (devAuthEnabled) {
 
 const googleClientId = process.env.GOOGLE_CLIENT_ID;
 const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
-if (!googleClientId && !devAuthEnabled) {
-  console.warn('GOOGLE_CLIENT_ID is not set and CINDER_DEV_AUTH is off — nobody will be able to sign in');
+
+/** Keycloak sign-in (e.g. the ICR realm), shown next to Google when KEYCLOAK_* is set. */
+export const keycloakSignIn = keycloakConfigFromEnv(process.env);
+
+if (!googleClientId && !keycloakSignIn && !devAuthEnabled) {
+  console.warn('Neither GOOGLE_CLIENT_ID nor KEYCLOAK_* is set and CINDER_DEV_AUTH is off — nobody will be able to sign in');
 }
 
 // Origins allowed to call the auth API. The Vite dev server (5173) proxies to the
@@ -88,5 +94,6 @@ export const auth = betterAuth({
     organization({
       allowUserToCreateOrganization: true,
     }),
+    ...(keycloakSignIn ? [genericOAuth({ config: [keycloakProvider(keycloakSignIn)] })] : []),
   ],
 });
