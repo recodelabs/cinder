@@ -67,6 +67,9 @@ URL, client ID and client secret. For the ICR gateway:
 | Token URL     | `https://auth.healthcampaigns.org/realms/icr/protocol/openid-connect/token` |
 | Client ID     | an API key's client id, e.g. `key-icrdemo`                               |
 
+Cinder reaches the ICR server only through the gateway. Don't add
+`hapi.healthcampaigns.org`, the open address of the same server, to the allowlist.
+
 Both hosts must be in `CINDER_ALLOWED_FHIR_HOSTS`, and the server needs
 `CINDER_ENCRYPTION_KEY` (the secret is envelope-encrypted like GCP service
 accounts). The token URL, and the base URL of a project with credentials, must
