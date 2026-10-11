@@ -22,6 +22,13 @@
       "when": 1788717642154,
       "tag": "0002_fhir_server_projects",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791747033520,
+      "tag": "0003_fhir_server_credentials",
+      "breakpoints": true
     }
   ]
 }

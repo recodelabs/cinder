@@ -6,6 +6,13 @@ import { authClient } from '../auth/auth-client';
 
 export type ProjectServerType = 'gcp' | 'fhir';
 
+/** OAuth client credentials of a 'fhir' project, as the API reports them: never the secret itself. */
+export interface ProjectFhirAuth {
+  readonly tokenUrl: string;
+  readonly clientId: string;
+  readonly clientSecretSet: boolean;
+}
+
 export interface Project {
   readonly id: string;
   readonly name: string;
@@ -15,6 +22,8 @@ export interface Project {
   /** 'gcp' = Google Cloud Healthcare API; 'fhir' = any FHIR R4 server at fhirBaseUrl. */
   readonly serverType: ProjectServerType;
   readonly fhirBaseUrl: string | null;
+  /** Set when the FHIR server needs a Bearer token; absent on projects cached before this field existed. */
+  readonly fhirAuth?: ProjectFhirAuth | null;
   readonly gcpProject: string | null;
   readonly gcpLocation: string | null;
   readonly gcpDataset: string | null;

@@ -4,7 +4,7 @@ import { Container, Text } from '@mantine/core';
 import type { JSX } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { useOrg, type Project } from '../contexts/OrgContext';
-import { ProjectForm, type ProjectFormValues } from './ProjectForm';
+import { ProjectForm, projectRequestBody, type ProjectFormValues } from './ProjectForm';
 
 export function EditProjectPage(): JSX.Element {
   const navigate = useNavigate();
@@ -28,7 +28,7 @@ export function EditProjectPage(): JSX.Element {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify(values),
+      body: JSON.stringify(projectRequestBody(values)),
     });
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));
@@ -51,11 +51,15 @@ export function EditProjectPage(): JSX.Element {
         description: target.description ?? '',
         serverType: target.serverType,
         fhirBaseUrl: target.fhirBaseUrl ?? '',
+        fhirAuthEnabled: Boolean(target.fhirAuth),
+        tokenUrl: target.fhirAuth?.tokenUrl ?? '',
+        clientId: target.fhirAuth?.clientId ?? '',
         gcpProject: target.gcpProject ?? '',
         gcpLocation: target.gcpLocation ?? '',
         gcpDataset: target.gcpDataset ?? '',
         gcpFhirStore: target.gcpFhirStore ?? '',
       }}
+      clientSecretSet={target.fhirAuth?.clientSecretSet ?? false}
       onSubmit={handleSubmit}
     />
   );
