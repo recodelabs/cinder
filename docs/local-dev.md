@@ -56,9 +56,40 @@ The project's hostname must be in `CINDER_ALLOWED_FHIR_HOSTS`, otherwise the
 server refuses it. This allowlist is what stops a hosted Cinder from being used
 as an open proxy, so leave it unset in production unless you mean it.
 
+### Servers that need a token (e.g. FHIR Info Gateway)
+
+Turn on **OAuth client credentials** in the project form and enter the token
+URL, client ID and client secret. For the ICR gateway:
+
+| Field         | Value                                                                    |
+| ------------- | ------------------------------------------------------------------------ |
+| FHIR base URL | `https://gateway.healthcampaigns.org/fhir`                               |
+| Token URL     | `https://auth.healthcampaigns.org/realms/icr/protocol/openid-connect/token` |
+| Client ID     | an API key's client id, e.g. `key-icrdemo`                               |
+
+Cinder reaches the ICR server only through the gateway. Don't add
+`hapi.healthcampaigns.org`, the open address of the same server, to the allowlist.
+
+Both hosts must be in `CINDER_ALLOWED_FHIR_HOSTS`, and the server needs
+`CINDER_ENCRYPTION_KEY` (the secret is envelope-encrypted like GCP service
+accounts). The token URL, and the base URL of a project with credentials, must
+be https unless they point at localhost. The API never returns the secret, only
+whether one is saved; leave the field blank when editing to keep it, and enter it
+again if you change the token URL or client ID.
+
 ## How the proxy handles a plain FHIR server
 
-- Requests to `/fhir/*` are forwarded to `<fhirBaseUrl>/*` with no auth header.
+- Requests to `/fhir/*` are forwarded to `<fhirBaseUrl>/*`. Without client
+  credentials no auth header is sent. With them, the proxy gets a token with the
+  OAuth client-credentials grant, caches it per project until a minute before it
+  expires, sends it as `Authorization: Bearer …`, and on a 401 fetches a new
+  token and retries once. Token requests don't follow redirects.
+- An upstream 401 (no credentials, or still rejected after the retry) and a
+  token endpoint 4xx come back as a 403 OperationOutcome. A 401 would sign the
+  user out of Cinder, and Medplum retries 5xx responses.
+- `If-None-Match` is not forwarded. The browser's cache is keyed by URL, not by
+  project, so its ETags can belong to another server, and FHIR Info Gateway
+  returns a 500 when HAPI answers a conditional read with 304.
 - HAPI pages with `Bundle.link[next] = <base>?_getpages=…`. The proxy folds that
   query into an opaque `_page_token` on the `next` link, and when the browser
   sends it back as `_cursor`/`_page_token`, the proxy replays the decoded query
@@ -72,7 +103,10 @@ as an open proxy, so leave it unset in production unless you mean it.
 
 - `CINDER_DEV_AUTH` is ignored when `NODE_ENV=production`.
 - Existing databases are upgraded on server start (`server/db.ts` adds the
-  `server_type` and `fhir_base_url` columns). The equivalent Drizzle migration is
-  `drizzle/0002_fhir_server_projects.sql`.
+  `server_type` and `fhir_base_url` columns and the `fhir_server_credential`
+  table). The equivalent Drizzle migrations are
+  `drizzle/0002_fhir_server_projects.sql` and `drizzle/0003_fhir_server_credentials.sql`.
+- `bun run db:rotate-keys` re-encrypts client secrets as well as service
+  accounts.
 - `bun run test` runs the browser tests. Server tests run with
   `bun test server/`; `server/routes/credentials.test.ts` needs `DATABASE_URL`.

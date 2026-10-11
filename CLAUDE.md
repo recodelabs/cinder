@@ -77,10 +77,14 @@ All FHIR requests go through `/fhir/*` on the Bun server (`server.ts`); in dev, 
 project and forwards based on its `serverType`:
 - **`gcp`:** Google Cloud Healthcare API, authenticated with the org's service account or the
   user's Google token. `_cursor` is rewritten to `_page_token`.
-- **`fhir`:** any FHIR R4 server (e.g. local HAPI) at `fhirBaseUrl`, no auth. Helpers in
-  `server/fhir-target.ts` translate HAPI `_getpages` paging into the same `_page_token`
-  contract and rewrite Bundle links back to the proxy. Hosts must be listed in
-  `CINDER_ALLOWED_FHIR_HOSTS`.
+- **`fhir`:** any FHIR R4 server (e.g. local HAPI) at `fhirBaseUrl`, proxied by
+  `server/fhir-proxy.ts`. Helpers in `server/fhir-target.ts` translate HAPI `_getpages` paging
+  into the same `_page_token` contract and rewrite Bundle links back to the proxy. Hosts must be
+  listed in `CINDER_ALLOWED_FHIR_HOSTS`. Optional OAuth client credentials (token URL, client ID,
+  secret in `fhir_server_credential`, secret envelope-encrypted, never returned by the API) make
+  the proxy send a Bearer token (`server/fhir-auth.ts`: cached per project, one refresh on 401),
+  e.g. for HAPI behind FHIR Info Gateway. The token URL's host must be allowlisted too. Upstream
+  401s become 403 OperationOutcomes so the browser neither signs out nor retries.
 
 ### Schema Loading
 

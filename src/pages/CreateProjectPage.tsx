@@ -1,9 +1,9 @@
 // ABOUTME: Form page to create a new project within the active organization.
-// ABOUTME: Collects project name, description, and FHIR target (GCP or FHIR server), then POSTs to the API.
+// ABOUTME: Collects project name, description, and FHIR target (GCP or FHIR server with optional client credentials), then POSTs to the API.
 import type { JSX } from 'react';
 import { useNavigate } from 'react-router';
 import { useOrg } from '../contexts/OrgContext';
-import { ProjectForm, type ProjectFormValues } from './ProjectForm';
+import { ProjectForm, projectRequestBody, type ProjectFormValues } from './ProjectForm';
 
 export function CreateProjectPage(): JSX.Element {
   const navigate = useNavigate();
@@ -14,7 +14,7 @@ export function CreateProjectPage(): JSX.Element {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify(values),
+      body: JSON.stringify(projectRequestBody(values)),
     });
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));

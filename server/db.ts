@@ -151,6 +151,24 @@ export async function ensureTables() {
     );
   `);
 
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS "fhir_server_credential" (
+      "id" text PRIMARY KEY NOT NULL,
+      "project_id" text NOT NULL UNIQUE REFERENCES "project"("id") ON DELETE CASCADE,
+      "token_url" text NOT NULL,
+      "client_id" text NOT NULL,
+      "encrypted_client_secret" text NOT NULL,
+      "encrypted_dek" text NOT NULL,
+      "iv" text NOT NULL,
+      "auth_tag" text NOT NULL,
+      "dek_iv" text NOT NULL,
+      "dek_auth_tag" text NOT NULL,
+      "key_version" integer NOT NULL DEFAULT 1,
+      "created_at" timestamp DEFAULT now() NOT NULL,
+      "updated_at" timestamp DEFAULT now() NOT NULL
+    );
+  `);
+
   // Upgrade projects created before generic FHIR server support. Guarded by
   // information_schema checks (rather than ADD COLUMN IF NOT EXISTS) so a
   // fresh database does not log "already exists" notices on every start.

@@ -1,5 +1,5 @@
-// ABOUTME: Drizzle schema for saved_store, org_credential, and project tables.
-// ABOUTME: Stores FHIR store configs, encrypted org credentials, and project definitions (GCP or generic FHIR server).
+// ABOUTME: Drizzle schema for saved_store, org_credential, project, and fhir_server_credential tables.
+// ABOUTME: Stores FHIR store configs, encrypted org credentials, project definitions, and FHIR server client credentials.
 import { integer, pgTable, text, timestamp, unique } from 'drizzle-orm/pg-core';
 
 export const savedStore = pgTable('saved_store', {
@@ -37,7 +37,8 @@ export const project = pgTable('project', {
   description: text('description'),
   organizationId: text('organization_id').notNull(),
   // 'gcp' targets Google Cloud Healthcare API via the gcp* coordinates;
-  // 'fhir' targets any FHIR R4 server (e.g. HAPI) at fhirBaseUrl with no auth.
+  // 'fhir' targets any FHIR R4 server (e.g. HAPI) at fhirBaseUrl, optionally with
+  // client credentials from fhir_server_credential.
   serverType: text('server_type', { enum: ['gcp', 'fhir'] }).notNull().default('gcp'),
   fhirBaseUrl: text('fhir_base_url'),
   gcpProject: text('gcp_project'),
@@ -49,3 +50,21 @@ export const project = pgTable('project', {
 }, (table) => [
   unique('project_organization_id_slug_unique').on(table.organizationId, table.slug),
 ]);
+
+// OAuth client credentials for a 'fhir' project whose server needs a Bearer token
+// (e.g. FHIR Info Gateway). The secret is envelope-encrypted like org_credential.
+export const fhirServerCredential = pgTable('fhir_server_credential', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  projectId: text('project_id').notNull().unique().references(() => project.id, { onDelete: 'cascade' }),
+  tokenUrl: text('token_url').notNull(),
+  clientId: text('client_id').notNull(),
+  encryptedClientSecret: text('encrypted_client_secret').notNull(),
+  encryptedDek: text('encrypted_dek').notNull(),
+  iv: text('iv').notNull(),
+  authTag: text('auth_tag').notNull(),
+  dekIv: text('dek_iv').notNull(),
+  dekAuthTag: text('dek_auth_tag').notNull(),
+  keyVersion: integer('key_version').notNull().default(1),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
