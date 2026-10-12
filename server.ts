@@ -91,6 +91,13 @@ export function createServer(options: ServerOptions = {}) {
     async fetch(req) {
       const url = new URL(req.url);
 
+      // Which sign-in buttons to show (public; no secrets)
+      if (url.pathname === '/api/sign-in-options' && req.method === 'GET') {
+        const { keycloakSignIn } = await import('./server/auth');
+        const { handleSignInOptions } = await import('./server/keycloak-sign-in');
+        return withSecurityHeaders(handleSignInOptions(keycloakSignIn));
+      }
+
       // Better Auth handles all /api/auth/* routes
       if (url.pathname.startsWith('/api/auth')) {
         const { auth } = await import('./server/auth');

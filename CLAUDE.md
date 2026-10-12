@@ -11,7 +11,7 @@ Cinder is a React SPA that browses, searches, and edits FHIR resources in Google
 - **UI:** Mantine 8, Tabler Icons
 - **Routing:** React Router 7
 - **FHIR:** @medplum/core, @medplum/react, @medplum/fhirtypes, @medplum/definitions (all 5.0.x)
-- **Auth:** Better Auth (Google social login; optional email/password for local dev)
+- **Auth:** Better Auth (Google social login; optional Keycloak; optional email/password for local dev)
 - **Testing:** Vitest, Testing Library (React + DOM + user-event), jsdom
 - **Production Server:** Bun HTTP server (`server.ts`) — static files + FHIR proxy
 
@@ -98,6 +98,9 @@ FHIR R4 schemas are loaded from `@medplum/definitions` bundles at startup (`load
 ### Auth Flow
 
 Better Auth sessions (`server/auth.ts`) with Google sign-in, then org → project selection.
+Optional Keycloak sign-in (`server/keycloak-sign-in.ts`, `KEYCLOAK_*` variables, see
+`docs/keycloak-sign-in.md`) adds a second button; it only accepts emails Keycloak has verified,
+and the page learns about it from `GET /api/sign-in-options`.
 With `CINDER_DEV_AUTH=true` (never in production) the sign-in page also offers email/password
 accounts so local dev needs no Google OAuth client.
 
