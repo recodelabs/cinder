@@ -262,6 +262,9 @@ function CredentialsTab({ orgId }: TabProps): JSX.Element {
           )}
         </Group>
       </Card>
+      <Text size="sm" c="dimmed">
+        Only needed for Google Cloud Healthcare API projects. FHIR server projects don't use it.
+      </Text>
       <FileInput
         label="Service Account JSON"
         placeholder="Select a .json file"
