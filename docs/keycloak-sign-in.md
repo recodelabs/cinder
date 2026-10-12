@@ -9,7 +9,7 @@ the sign-in page shows the button. Without them, nothing changes.
 
 | Variable                 | Example                                         |
 | ------------------------ | ----------------------------------------------- |
-| `KEYCLOAK_ISSUER`        | `https://auth.healthcampaigns.org/realms/icr-users` |
+| `KEYCLOAK_ISSUER`        | `https://auth.healthcampaigns.org/realms/icr` |
 | `KEYCLOAK_CLIENT_ID`     | `cinder`                                        |
 | `KEYCLOAK_CLIENT_SECRET` | the client's secret                             |
 | `KEYCLOAK_LABEL`         | `ICR` (button text: "Sign in with ICR")         |
@@ -36,28 +36,28 @@ The issuer must be https, except on localhost.
 
 ## Which realm
 
-The ICR FHIR Info Gateway accepts **any** valid token from realm `icr`
-(`TOKEN_ISSUER` in the ICR compose file). A person who has an account in realm
-`icr` can get such a token themselves, for example through Keycloak's built-in
-account console, and so gets direct read/write access to the FHIR API outside
-Cinder.
+The demo uses realm `icr`, the realm that also holds the gateway's API keys.
+The ICR FHIR Info Gateway accepts any valid token from that realm
+(`TOKEN_ISSUER` in the ICR compose file). So anyone with a user account in
+`icr` can also get a token for themselves, for example through Keycloak's
+account console, and read or write the FHIR API directly, outside Cinder. Only
+give accounts to people who may have that access.
 
-Put Cinder users in a **separate realm** (for example `icr-users`) unless they
-should also have that direct access. Cinder's access to the ICR data comes from
-the project's API key, not from the person's login, so a separate realm loses
-nothing in Cinder.
+For a production setup, put Cinder users in a separate realm. Cinder gets its
+access to the ICR data from the project's API key, not from the person's login,
+so a separate realm takes nothing away in Cinder.
 
 ## Setting up the ICR Keycloak
 
 On the ICR VM, from `/opt/icr-hapi/gcp` (the same way `gateway/api-key.sh`
-runs), create the realm if needed and the `cinder` client, then print the
-client's secret:
+runs), create the `cinder` client in realm `icr` and print its secret. The
+realm is only created if it doesn't exist.
 
 ```bash
 sudo docker compose exec -T keycloak bash -s <<'EOF'
 set -euo pipefail
 K=/opt/keycloak/bin/kcadm.sh
-REALM=icr-users
+REALM=icr
 CINDER=https://cinder.recodelabs.org
 $K config credentials --server http://localhost:8080 --realm master \
   --user "$KC_BOOTSTRAP_ADMIN_USERNAME" --password "$KC_BOOTSTRAP_ADMIN_PASSWORD" >/dev/null
@@ -79,7 +79,7 @@ Add a person (they choose their own password at first sign-in):
 sudo docker compose exec -T keycloak bash -s <<'EOF'
 set -euo pipefail
 K=/opt/keycloak/bin/kcadm.sh
-REALM=icr-users
+REALM=icr
 $K config credentials --server http://localhost:8080 --realm master \
   --user "$KC_BOOTSTRAP_ADMIN_USERNAME" --password "$KC_BOOTSTRAP_ADMIN_PASSWORD" >/dev/null
 $K create users -r $REALM -s username=amina -s email=amina@example.org -s emailVerified=true \
@@ -95,7 +95,7 @@ then **Credentials → Set password** with **Temporary** on.
 Then set the variables on the Cinder service in Railway and redeploy:
 
 ```bash
-railway variable set KEYCLOAK_ISSUER=https://auth.healthcampaigns.org/realms/icr-users \
+railway variable set KEYCLOAK_ISSUER=https://auth.healthcampaigns.org/realms/icr \
   KEYCLOAK_CLIENT_ID=cinder KEYCLOAK_LABEL=ICR KEYCLOAK_CLIENT_SECRET=<secret> --service cinder
 ```
 
